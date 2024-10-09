@@ -444,6 +444,8 @@ def check_host():
 def check_host_v2(c: Connection):
     "Check that needed tools are installed on hosts"
     
+    cnn = Connection(host=c.host, connect_kwargs={"password": "password"})
+    
     # get type of current host
     htype = get_type_cached(env.host_string)
     
