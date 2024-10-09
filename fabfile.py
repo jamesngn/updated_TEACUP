@@ -74,7 +74,7 @@ from experiment import run_experiment
 from hostint import get_netint
 from hostmac import get_netmac
 from sanitychecks import check_host, check_host_v2, check_connectivity, kill_old_processes, \
-    sanity_checks, get_host_info, check_config, check_time_sync
+    sanity_checks, sanity_checks_v2, get_host_info, check_config, check_time_sync
 from util import exec_cmd, authorize_key, copy_file
 from hostsetup import init_host, init_ecn, init_cc_algo, init_router, \
         init_hosts, init_os, power_cycle, init_host_custom
@@ -277,12 +277,6 @@ def run_experiment_single(test_id='', *nargs, **kwargs):
     _nargs, _kwargs = _fill_missing(*nargs, **kwargs)
     execute(run_experiment, test_id, test_id, *_nargs, **_kwargs)
     
-@fabric_v2_task
-def who_am_i(c:Connection):
-    c = Connection('controlhost', connect_kwargs={"password": "password",},)
-    c.run('whoami')
-    c.run('hostname')
-
 
 ## Generic function for varying a parameter
 #  @param test_id Test ID

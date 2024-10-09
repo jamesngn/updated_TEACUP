@@ -34,7 +34,7 @@ import os
 import re
 import datetime
 import config
-from fabric2 import Connection, SerialGroup, task as fabric_v2_task
+from fabric2 import Connection, SerialGroup, task as fabric_v2_task, Config
 from fabric.api import task as fabric_task, warn, local, run, execute, abort, hosts, \
     env, settings, parallel, serial, puts, put
 from hosttype import get_type_cached, get_type_cached_v2
@@ -727,7 +727,12 @@ def sanity_checks_v2(c):
     
     group = SerialGroup(*all_hosts)
     
-    for conn in group:
-        print(f"Running sanity checks on {conn.host}")
-        check_host_v2(conn)
+    print("group: ", group)
+    config = Config.from_v1(env)
+    
+    print("config: ", config)
+    
+    # for conn in group:
+    #     print(f"Running sanity checks on {conn.host}")
+    #     check_host_v2(conn)
 
