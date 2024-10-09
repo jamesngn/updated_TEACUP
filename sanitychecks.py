@@ -444,8 +444,6 @@ def check_host():
 def check_host_v2(c: Connection):
     "Check that needed tools are installed on hosts"
     
-    print("Checking host %s" % c.host)
-
     # get type of current host
     htype = get_type_cached_v2(c)
     
