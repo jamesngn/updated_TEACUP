@@ -50,6 +50,11 @@ from trafficgens import start_iperf, start_ping, \
 
 import logging
 
+class HostLoggerAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        # Add host information to the message
+        return f"[{self.extra['host']}] {msg}", kwargs
+
 # Set up logging
 logging.basicConfig(
     filename='fabric_output.log',
@@ -58,14 +63,17 @@ logging.basicConfig(
 )
 
 # This function initializes the logger for a specific host
+# This function initializes the logger for a specific host
 def init_logger(host):
     logger = logging.getLogger(host)
     handler = logging.FileHandler(f'{host}_output.log')
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
-    return logger
+    
+    # Create and return LoggerAdapter with host info
+    return HostLoggerAdapter(logger, {'host': host})
 
 
 def _args(*_nargs, **_kwargs):
@@ -461,12 +469,13 @@ def check_host():
 @fabric_v2_task
 @parallel
 def check_host_v2(c: Connection):
-    "Check that needed tools are installed on hosts"
+    # Initialize logger for the current host
+    logger = init_logger(c.host)
     
-    logger = init_logger(c.host)  # Initialize logger per host
-
+    # Log the current host
+    logger.info(f"Running checks on {c.host}")
+    
     # Get type of current host
-    logger.info(f"Checking host: {c.host}")
     htype = get_type_cached_v2(c)
     logger.info(f"Host type: {htype}")
 
@@ -507,7 +516,7 @@ def check_host_v2(c: Connection):
             logger.info(result.stdout.strip())
             result = c.run('which win-estats-logger', warn=True, pty=False)
             logger.info(result.stdout.strip())
-            
+
             # Handle ntp
             result = c.run('ls "/cygdrive/c/Program Files (x86)/NTP/bin/ntpq"', warn=True)
             if result.return_code != 0: 
@@ -519,12 +528,14 @@ def check_host_v2(c: Connection):
             for interface in interfaces:
                 result = c.run(f'netsh int set int "Local Area Connection {interface}" enabled', warn=True, pty=False)
                 logger.info(result.stdout.strip())
-                
+
+        # Check various utilities
         tools = ['killall', 'pkill', 'ps', 'gzip', 'dd', 'iperf', 'ping', 'httperf', 'lighttpd', 'nttcp']
         for tool in tools:
             result = c.run(f'which {tool}', warn=True, pty=False)
             logger.info(f'{tool}: {result.stdout.strip()}')
 
+    # Log completion
     logger.info(f"Check completed for {c.host}")
             
 
