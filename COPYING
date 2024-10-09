@@ -1,0 +1,55 @@
+Any 3rd party software tools provided under ./tools or ./animate are covered
+by the specific copyright and license terms contained within each tool's
+tarball or source. It is our current belief that these tools allow redistribution
+in this manner.
+
+TEACUP documentation under ./docs is derived from documentation
+source originally released on June 9th 2016 under a Creative Commons
+Attribution-ShareAlike 4.0 International License ("CC BY-SA 4.0",
+http://creativecommons.org/licenses/by-sa/4.0) by the Centre for Advanced
+Internet Architectures, Swinburne University of Technology. See
+http://caia.swin.edu.au/tools/teacup/downloads/teacup-docs-1.0-CC-BY-SA-9jun16.zip
+
+TEAPLOT documentation under ./docs is derived from LaTeX source originally
+released on July 1st 2016  under a Creative Commons Attribution-ShareAlike 4.0
+International License ("CC BY-SA 4.0", http://creativecommons.org/licenses/by-sa/4.0)
+by the Centre for Advanced Internet Architectures, Swinburne University of Technology.
+See http://caia.swin.edu.au/tools/teacup/downloads/teaplot-docs-0.1-CC-BY-SA-1jul16.zip
+
+Per the terms of CC BY-SA 4.0, derived documentation under ./docs is also
+licensed under CC BY-SA 4.0.
+
+TEAPLOT code under ./animate is covered by ./animate/LICENSE-teaplot
+
+Other files (including those under ./example_configs) are
+covered by the following one or more notice(s):
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Copyright (c) 2013-2015 Centre for Advanced Internet Architectures,
+Swinburne University of Technology. All rights reserved.
+
+Authors: Sebastian Zander (sebastian.zander@gmx.de),
+        Grenville Armitage (garmitage@swin.edu.au)
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+

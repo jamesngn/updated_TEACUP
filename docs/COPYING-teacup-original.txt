@@ -1,0 +1,22 @@
+From http://caia.swin.edu.au/tools/teacup/downloads/teacup-docs-1.0-CC-BY-SA-9jun16.zip
+
+++++++++++++++++++++++
+This tarball contains the LyX source code, pdf images and pptx source
+(for the pdf images) required to build these documents:
+
+- "TEACUP v1.0 -- A System for Automated TCP Testbed Experiments", by Sebastian Zander and Grenville Armitage
+- "TEACUP v1.0 -- Data Analysis Functions", by Sebastian Zander and Grenville Armitage
+- "TEACUP v1.0 -- Command Reference", by Sebastian Zander
+
+(c) copyright 2015-2016 CAIA, Swinburne University of Technology.
+
+As of June 2016 these files have been licensed under a Creative Commons
+Attribution-ShareAlike 4.0 International License ("CC BY-SA 4.0",
+http://creativecommons.org/licenses/by-sa/4.0).
+
+Based on works originally released at:
+- http://caia.swin.edu.au/reports/150529A/CAIA-TR-150529A.pdf 
+- http://caia.swin.edu.au/reports/150529B/CAIA-TR-150529B.pdf
+and
+- http://caia.swin.edu.au/reports/150529C/CAIA-TR-150529C.pdf 
+++++++++++++++++++++++

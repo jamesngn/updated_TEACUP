@@ -1,0 +1,57 @@
+BUGS
+
+- On Linux tcpdump is not in path by default
+
+- using analyse_cmpexp with NICER_XLABS=1 and omit_const_xlab_vars=0 causes
+  the x-labels to be printed way too low. however, if you use NICER_XLABS=1
+  you should also use omit_const_xlab_vars=1 to get nice plots
+- probably broken is the use of host names with explicit port sepecification,
+  e.g. specifying testhost1:222. don't really need ports in physical testbed
+  but need this with VMs on one host
+- fix web10g log file version chaos caused by version 2.0.9 producing different
+  columns compared to version 2.0.7 (Windows etstas logger is equivalent to
+  version 2.0.7). This only affects plots of unsmoothed TCP RTTs though.
+  -> new version of web10g-logger will log the attribute names. need to attach
+     atribute names for old log files based on the definitions. Allow using names
+     instead of column numbers to refer to attributes 
+- TPCONF_test_id is misnamed, as it really sets the test ID prefix
+     
+     
+FUTURE WORK
+
+- Change TPCONF_test_id to TPCONF_test_id_prefix to better express its function
+- extend init_toplogy so it works with arbitrary topologies?
+- move custom command execution after router pipe setup?
+- add per host Linux kernel configuration
+- use @serial decorator for tasks that cannot run in parallel
+- add actually used tcp cc algorithm in file name if host<N> specified?
+- log start/end time of experiment explicitly?
+- check router and traffic configuration before actually running experiment. hard
+  to do as we would need to run the actual commands, unless we check each parameter
+  for all possible values, which is impossible for thing like extra_params.
+- use internal names for host instead of control interfaces. would make it easier
+  to transition to different networks, but requires and additional mapping table.
+- check that all hosts are properly time synchronised (simple check implemented,
+  but could look at ntp sync data in more detail)
+- gzip all data files created used for plotting, change plot function so they read
+  from gzipped files (save disk space)
+- a lot of the code could be a lot more user friendly, with extra parameter checks, 
+  checks for existance of files, checks for empty interim data files, better error 
+  messages. but will take some time to implement.
+- pre-boot custom commands, e.g. change /etc/loader.conf on FreeBSD
+- change the code to get the MAC address directly, current approach is inelegant
+- improve parameter checking in all tasks
+- refactor code (change to OO structure)
+  - traffic generator class
+    - methods that are called for each generator from different places
+      - check, initial_cleanup, start, stop, final_cleanup 
+    - register method
+  - logger class similar to traffic generator class
+  - base extract/analyse class(es), derived classes that implement the actual 
+    functions
+- improve code
+  - start/stop traffic generators in parallel (quite a bit of effort) (BASICALLY DONE)
+    - start: split list by host, parallel execute for each host (difficult)
+      - without knowledge of tools don't know exactly what to start where 
+      - must ensure dependencies are taken care of, e.g. server started before client
+  - stop: split task list by host, parallel excute for each host

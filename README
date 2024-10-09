@@ -1,0 +1,75 @@
+TEACUP (TCP Experiment Automation Controlled Using Python) README 
+=================================================================
+
+$Id: README,v b8b8b0a4e8b1 2018/02/09 23:53:50 garmitage $
+
+ACKNOWLEDGMENTS
+---------------
+
+See ./ACKNOWLEDGEMENTS
+
+INTRODUCTION
+------------
+
+This README is for TEACUP Version 1.1
+
+This README provides a brief overview on where to find information on setting
+up a TEACUP testbed, running experiments and analysing the results of experiments.
+
+The project website is https://sourceforge.net/projects/teacup
+
+
+TEACUP TESTBED
+--------------
+
+TEACUP makes some assumptions on the setup of the testbed and hosts. In order
+to use all of TEACUP's functions one needs to install a testbed similar to the
+one described briefly in INSTALL and described in more detail in:
+http://caia.swin.edu.au/reports/150210C/CAIA-TR-150210C.pdf
+
+A minimum setup for TEACUP does not require all the functionality
+described in CAIA-TR-150210C.pdf. The minimum setup is:
+- Two subnets separated by one router, with at least one host in each
+  subnet acting as traffic source/sink;
+- Hosts must run Linux, FreeBSD, Windows 7 or Mac OS X, the router must run
+  Linux (preferably) or FreeBSD;
+- Each host needs an extra network interface connected to a separate control 
+  network;
+- A control host that runs TEACUP to control the testbed via the control
+  network;
+- TCP logging tools for OS must be installed as explained in CAIA-TR-150210C.pdf;
+- Traffic generators must be installed as explained in CAIA-TR-150210C.pdf;
+- Support tools must be installed as explained in CAIA-TR-150210C.pdf, but
+  depending on the OS many of these are already installed by default.
+
+A multi-boot OS setup with PXE booting and power controllers as decribed in
+CAIA-TR-150210C.pdf is very useful but optional.
+
+
+DOCUMENTATION
+-----------
+
+Running experiments: For more details on how to setup experiments and
+the design of TEACUP please refer to ./docs/TEACUP-System-v1.1.pdf
+or https://sourceforge.net/projects/teacup/files/TEACUP-System-v1.1.pdf
+
+Analysing experiments: For more details on how to analyse the data collected
+during experiments please refer to ./docs/TEACUP-Analysis-v1.1.pdf or
+https://sourceforge.net/projects/teacup/files/TEACUP-Analysis-v1.1.pdf
+
+A command reference doc is at ./docs/TEACUP-Commandref-v1.1.pdf or
+https://sourceforge.net/projects/teacup/files/TEACUP-Commandref-v1.1.pdf
+
+
+COPYRIGHT
+---------
+
+- Any 3rd party software tools provided under ./tools are covered by
+the specific copyright and license terms contained within each tool's
+tarball. It is our current belief that these tools allow redistribution
+in this manner.
+
+- All remaining files (including those under ./example_configs) are
+covered by ./COPYING and ./ACKNOWLEDGEMENTS.
+
+

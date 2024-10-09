@@ -1,0 +1,69 @@
+v0.2 (12apr2017)({dmirkovic,rcollom}@swin.edu.au)
+- Changed index.html page title to reflect teaplot version 0.2
+- Added toggle of graph controls button
+- Moved Legend below the graph controls, and changed to be a scroll bar
+- Updated bootstrap.theme.min.css, bootstrap.min.css and boostrap.min.js to version 3.3.6
+- Changed existing menus under the Metrics and Flows navbar menu to use accordion dropdown boxes
+- Edited organisation and presentation of different options under these menus for better clarity
+- Added Expand/Collapse all button for new dropdown boxes
+- Adjusted positioning of axis labels
+- Changed toggle 3D view to change axis to RGB when in 3d view, and to just Black when 2D
+- Added an Update and Close button to the top of the Metrics and Flows menu to ease use when dealing with large sets of data 
+- Fixed overflow of experiment data sources text
+- Updated visual appearance of navbar graphing options (color and applying visual toggling ability)
+- Added/changed existing animate button to start, pause and reset (additional functionality added to reflect new animate buttons)
+- Fixed/added toggle functionality to all existing buttons that require it
+- Opening the Metrics or Flows menu no longer collapse all dropdown boxes
+- Changed the Update Flows and View buttons to be disabled until appropriate options are selected to enable them
+- Fixed Flows being unchecked but not being removed from the available flows under Flows menu
+- Fixed/Changed the loading panel, and where it is shown and removed
+
+v0.1.1 (3jun16)
+- Remove need for a config.py in teacup source directory (garmitage@swin.edu.au)
+- Gratuitous re-arrangement of Changelog.teaplot (garmitage@swin.edu.au)
+
+v0.1 (28aug15)(this and all earlier versions: isaac true)
+- Initial public release
+- Minor CSS changes
+- Fixed overflow of axis selection dropdowns
+- Added About dialogue
+
+v0.1-rc8 (30jul15)
+- Implemented group time normalisation for plotting multiple
+  experiments/tests at once
+
+v0.1-rc7 (30jul15)
+- Fixed animation pause and resume
+- Reduced max-width parameter for the control sliders panel
+
+v0.1-rc6 (30jul15)
+- Fixed issue regarding stime/etime parameters
+- Adjust license headings in Python files
+
+v0.1-rc5 (29jul15)
+- Fixed throughput/goodput calculations
+- Set default yscale for goodput, throughput, and ackseq to 0.001
+  (kb/kB)
+- Fixed default setting for web10g/siftr
+
+v0.1-rc4 (29jul15)
+- Fixed typo in rc3 bug fix
+- Implemented stime and etime fabric parameters
+
+v0.1-rc3 (29jul15)
+- Fixed another issue regarding start and end times when using multiple
+  graphs.
+- Added licenses
+
+v0.1-rc2 (29jul15)
+- Added arguments to INSTALL.TEAPLOT
+- Changed wording
+- Fixed issue regarding start and end times of different flows, and
+  their respective scaling values
+
+Teaplot v0.1-rc1 (29jul15)
+- Installation archive now includes minified versions of the required
+  JavaScript client libraries. This removes the requirement for
+  bower and npm to be installed on the server host.
+- Added INSTALL.TEAPLOT
+- Removed unnecessary files

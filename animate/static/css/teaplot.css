@@ -1,0 +1,326 @@
+/**
+Copyright (c) 2015 Centre for Advanced Internet Architectures,
+Swinburne University of Technology. All rights reserved.
+
+Author: Isaac True (itrue@swin.edu.au)
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+*/
+
+/* Djuro start add here */
+.accordion-option {
+    width: 100%;
+    float: left;
+    clear: both;
+    margin: 15px 0;
+}
+
+.accordion-option .title {
+    font-size: 20px;
+    font-weight: bold;
+    float: left;
+    padding: 0;
+    margin: 0;
+}
+
+.accordion-option .toggle-accordion {
+    float: right;
+}
+
+/* .accordion-option .toggle-accordion:before {
+    content: "Expand All";
+}
+
+.accordion-option .toggle-accordion.active:before {
+    content: "Collapse All";
+} */
+.btn {
+    text-align: left;   
+    word-wrap: break-word; /* Added */
+    white-space: normal;
+}
+
+.panel-heading.accordion-toggle:before {
+    font-family: 'Glyphicons Halflings';
+    content: "\2212"; /* from bootstrap.css */
+    float: right;
+    color: white;
+}
+
+.panel-heading.accordion-toggle.collapsed:before {
+    content: "\2b"; /* from bootstrap.css */
+}
+
+.panel-heading {
+    cursor: pointer;
+}
+/* Djuro end here */
+.legend {
+    position: fixed;
+    min-width: 200px;
+    top: 70px;
+    right: 20px;
+}
+
+.legendFlow {
+    word-wrap: break-word;
+}
+
+.controls {
+    position: fixed;
+    min-width: 200px;
+    top: 70px;
+    right: 20px;
+    max-width: 350px;
+    overflow: scroll; /* Added */
+    min-height: 20%; /* Added */
+    max-height: 90%; /* Added */
+}
+
+#threejs {
+    min-height: 100% !important;
+    height: 100% !important;
+    overflow: hidden;
+    margin: 0px;
+    padding: 0px;
+}
+
+body {
+    overflow-y: hidden;
+}
+
+.metricTableRowName {
+    vertical-align: middle;
+}
+
+.loadPanel {
+    position: fixed;
+    width: 150px;
+    right: 20px;
+    bottom: 0px;
+    height: 0px;
+    transition: height 0.5s ease;
+    z-index: 9999
+}
+
+.loadPanel-show {
+    height: 100px;
+    bottom: 20px;
+    right: 20px;
+}
+
+.spinner {
+    -moz-animation: spinner-loader 1500ms infinite linear;
+    -webkit-animation: spinner-loader 1500ms infinite linear;
+    animation: spinner-loader 1500ms infinite linear;
+}
+
+.wrappedTable {
+    word-wrap: break-word;
+    table-layout: fixed;
+}
+
+.expIdTableName {
+    padding: 0px !important;
+    vertical-align: middle !important;
+}
+
+.checkBoxCell {
+    padding: 0px !important;
+    vertical-align: middle !important;
+}
+
+.teaplotCheckbox {
+    padding-left: 10px !important;
+}
+
+#metricsTabDataSourcesExp {
+    min-height: 200px;
+}
+
+@
+-moz-keyframes spinner-loader { 0% {
+    -moz-transform: rotate(0deg);
+    transform: rotate(0deg);
+}
+
+100%
+{
+-moz-transform
+
+
+:
+
+ 
+
+rotate
+
+
+(360
+deg
+);
+
+
+        
+
+transform
+
+
+:
+
+ 
+
+rotate
+
+
+(360
+deg
+);
+
+
+    
+
+}
+}
+@
+-webkit-keyframes spinner-loader { 0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+}
+
+100%
+{
+-webkit-transform
+
+
+:
+
+ 
+
+rotate
+
+
+(360
+deg
+);
+
+
+        
+
+transform
+
+
+:
+
+ 
+
+rotate
+
+
+(360
+deg
+);
+
+
+    
+
+}
+}
+@
+keyframes spinner-loader { 0% {
+    -moz-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+}
+100%
+{
+-moz-transform
+
+
+:
+
+ 
+
+rotate
+
+
+(360
+deg
+);
+
+
+        
+
+-ms-transform
+
+
+:
+
+ 
+
+rotate
+
+
+(360
+deg
+);
+
+
+        
+
+-webkit-transform
+
+
+:
+
+ 
+
+rotate
+
+
+(360
+deg
+);
+
+
+        
+
+transform
+
+
+:
+
+ 
+
+rotate
+
+
+(360
+deg
+);
+
+
+    
+
+}
+}

@@ -1,0 +1,2621 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass IEEEtran
+\begin_preamble
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{inconsolata}
+\usepackage{listings}
+\usepackage{setspace}
+\usepackage{pbox}
+\usepackage{booktabs}
+%\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{tikz}
+\usepackage{pgf-umlsd}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+\makeatletter
+
+
+\usepackage{changepage}
+
+\usepackage{lastpage}
+
+% Change the \footnoterule command to separate footnotes from 
+% the main text by a short horizontal rule (borrowed
+% from the CAIA style)
+\renewcommand{\footnoterule}
+{
+\kern-3\p@
+\hrule\@width.4\columnwidth
+\kern2.6\p@
+}
+
+%% Mimic CAIA TR use of hyperlinks
+
+% The "xcolor" package allows us to define the colours we will use for links   %
+% within the PDF when we later load the "hyperref" package.                    %
+
+\RequirePackage{xcolor}
+\xdefinecolor{linkc}{RGB}{33,0,99}
+\xdefinecolor{citec}{RGB}{0,0,0}
+\xdefinecolor{caiablack}{RGB}{0,0,0}
+\xdefinecolor{urlc}{RGB}{33,0,99}
+
+% The "hyperref" package allows us to generate a PDF with associated PDF links %
+% and bookmarks and other funky PDF stuff.                                     %
+
+\RequirePackage[colorlinks=true,                  % Links are marked as coloured text, not coloured box.
+                linkcolor= linkc,                 % Colour of in-document links (e.g. in the table of contents).
+                citecolor= caiablack,             % Colour of bibliographic citations.
+                urlcolor= urlc,                   % Colour of hyperlinks to the Net.
+                pdfpagelayout=SinglePage,         % Initial view is page-by-page
+                pdfstartview=FitV,                % Fit the document to window height.
+               ]{hyperref}
+               
+               
+\usetikzlibrary{arrows,automata,positioning,shapes,decorations.pathreplacing}
+\newcommand{\sh}[2]{{\small \texttt{#1 #2}}}
+\end_preamble
+\options 11pt, a4paper, conference
+\use_default_options false
+\maintain_unincluded_children false
+\language english
+\language_package none
+\inputencoding utf8
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement tbh
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\pdf_title "Your Title"
+\pdf_author "Your Name"
+\pdf_bookmarks true
+\pdf_bookmarksnumbered true
+\pdf_bookmarksopen true
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle false
+\pdf_quoted_options "pdfpagelayout=OneColumn, pdfnewwindow=true, pdfstartview=XYZ, plainpages=false"
+\papersize a4paper
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 0
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 0
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 2
+\papersides 1
+\paperpagestyle fancy
+\tracking_changes true
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+title{Teaplot v0.2: A browser-based 3D engine for animating TEACUP experiment
+ data}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+author{
+\backslash
+IEEEauthorblockN{Isaac True
+\backslash
+IEEEauthorrefmark{1}
+\backslash
+thanks{
+\backslash
+IEEEauthorrefmark{1}The work described in this report was done during the
+ author's winter internship at CAIA in 2015}, Grenville Armitage, Philip
+ Branch}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+IEEEauthorblockA{Centre for Advanced Internet Architectures
+\backslash
+
+\backslash
+
+\end_layout
+
+\begin_layout Plain Layout
+
+Swinburne University of Technology
+\backslash
+
+\backslash
+
+\end_layout
+
+\begin_layout Plain Layout
+
+Melbourne, Australia
+\backslash
+
+\backslash
+
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+url{itrue@swin.edu.au}, 
+\backslash
+url{garmitage@swin.edu.au}, 
+\backslash
+url{pbranch@swin.edu.au}}}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+IEEEoverridecommandlockouts
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+maketitle
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+fancypagestyle{firstpage}{% Page style for first page
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+fancyhf{}% Clear header/footer
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+renewcommand{
+\backslash
+headrulewidth}{0pt}% Header rule
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+renewcommand{
+\backslash
+footrulewidth}{0pt}% Footer rule
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+fancyfoot[C]{
+\backslash
+small{
+\backslash
+copyright~2015 -- 2016 CAIA, Swinburne University of Technology
+\backslash
+
+\backslash
+Originally published as 
+\backslash
+url{http://caia.swin.edu.au/reports/150828A/CAIA-TR-150828A.pdf}
+\backslash
+
+\backslash
+Version 1.0 was released July 1st 2016 under Creative Commons BY-SA 4.0 License
+ -- see terms on page~
+\backslash
+pageref{sec:Copying}}}
+\end_layout
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+thispagestyle{firstpage}
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+pagestyle{fancy}
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+headheight 13.4pt
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+renewcommand{
+\backslash
+headrulewidth}{0pt}
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+lfoot{
+\backslash
+small{Teaplot v0.2: A browser-based 3D engine for animating TEACUP experiment
+ data}}
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+cfoot{}
+\end_layout
+
+\begin_layout Plain Layout
+
+  
+\backslash
+rfoot{
+\backslash
+small{May 12, 2017~~page 
+\backslash
+thepage ~of 
+\backslash
+pageref{LastPage}}} 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Abstract
+TEACUP is a software tool developed at CAIA for running automated TCP experiment
+s, which can generate static PDF graphs of experiment results using R.
+ Teaplot v0.2 is an extension to this tool which allows the user to interactively
+ visualise and animate these results in a web browser in both 2-and 3D.
+\end_layout
+
+\begin_layout Abstract
+This report contains information pertaining to the architecture and technical
+ requirements of the extension, along with the installation procedure and
+ a user interface guide for the web client component.
+\end_layout
+
+\begin_layout Abstract
+Ideas for potential further work on Teaplot were identified during development,
+ including bug fixes and solutions for performance and visual issues, and
+ have been included within this report.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+%
+\backslash
+tableofcontents
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+TEACUP 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "teacup"
+
+\end_inset
+
+ is a software tool developed at CAIA for running automated TCP experiments
+ and modelling complex network characteristics and performance in a testbed.
+ Teaplot v0.2 is an extension to this tool.
+\end_layout
+
+\begin_layout Standard
+Traditionally, TEACUP experiment data is analysed and plotted using scripts
+ written in R 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "R"
+
+\end_inset
+
+, which generate static graphs as PDFs.
+ Changing how the data is displayed means modifying command line arguments
+ and regenerating these graphs, repeatedly -- a time-consuming and repetitive
+ job.
+ Teaplot reinvents this process by providing the user with a graphical interface
+ in their browser which can be used to plot experiment data dynamically,
+ allowing the user to pick and choose results from various experiments,
+ combine multiple measured and calculated metrics, and animate the data
+ as it changes over time across multiple graphs, in both 2- and 3D.
+\end_layout
+
+\begin_layout Standard
+The current TEACUP version as of the time of writing is v1.1.
+ Further information relating to TEACUP, its operation, and example scenarios
+ for testbeds can be found in the TEACUP technical reports 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CAIA-TR-150529A"
+
+\end_inset
+
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CAIA-TR-150529B"
+
+\end_inset
+
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CAIA-TR-150529C"
+
+\end_inset
+
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "CAIA-TR-150210C"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+This report is intended to give the reader a technical overview of the functions
+, requirements, and usage of Teaplot.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sect:architecture"
+
+\end_inset
+
+ details how the system is structured, while Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sect:requirements"
+
+\end_inset
+
+ details the technical requirements and software dependencies.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sect:installation"
+
+\end_inset
+
+ describes how to install the required Teaplot dependencies using TEACUP
+ v1.1 as a base.
+ Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sect:usage"
+
+\end_inset
+
+ guides the potential user in the use of the client web interface component
+ of Teaplot, and Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sect:future"
+
+\end_inset
+
+ gives examples for potential further work that have been identified as
+ useful or beneficial to the performance of the program.
+ 
+\end_layout
+
+\begin_layout Section
+Architecture
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sect:architecture"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Subsection
+System Design
+\end_layout
+
+\begin_layout Standard
+The Teaplot system is separated into two components: the client, and the
+ server.
+ The client component is an HTML5-compliant WebGL-based web page which is
+ used as the user interface for Teaplot, while the server component, written
+ in Python, is responsible for the mathematical and data processing tasks
+ required in creating the data for the animations.
+ All intensive mathematical calculations are performed by the server, where
+ the operations can be accelerated through the use of mathematical libraries
+ such as SciPy and NumPy, which provide Python wrappers around native libraries.
+ The server is also responsible for communicating with TEACUP, in order
+ to extract and utilise the data it makes available.
+ This architecture can be seen in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:architecture"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The server makes available to the client an API, through which the client
+ can request a list of experiments, metrics, and flows, and also request
+ a set of data to be generated for a particular experiment, metric, and
+ flow combination in order to plot and animate it on screen.
+ This design ensures separation of the client and server logic, and facilitates
+ the use of the server-side mathematical libraries as described above.
+\end_layout
+
+\begin_layout Standard
+The server also provides the HTTP server for the static web pages comprising
+ the client; to use Teaplot, a user simply navigates to the URL of the server
+ using a compatible web browser.
+\end_layout
+
+\begin_layout Standard
+The Teaplot server is implemented as a Fabric 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "fabric"
+
+\end_inset
+
+ task called 
+\family typewriter
+animate
+\family default
+, and so easily integrates into existing TEACUP installations.
+ The 
+\family typewriter
+animate
+\family default
+ task is easily executed as an argument to the 
+\family typewriter
+fab
+\family default
+ task.
+ Details regarding this usage can be found in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sect:usage"
+
+\end_inset
+
+.
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\family sans
+\size small
+ 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sffamily 	
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+small 	
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+centering 	
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,node distance=3cm, 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	thick,main node/.style={circle,fill=blue!20,draw,font=
+\backslash
+sffamily}]
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+node[main node,label={Python},minimum size=2cm] (1) {Server}; 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+node[main node,label={HTML5},minimum size=2cm] (2) [left of=1] {Client};
+ 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+node[main node,label={Python},minimum size=2cm] (3) [right of=1] {TEACUP};
+ 
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+path[every node/.style={font=
+\backslash
+sffamily
+\backslash
+small}]
+\end_layout
+
+\begin_layout Plain Layout
+
+	(1) edge [bend right] node [] {} (2) 
+\end_layout
+
+\begin_layout Plain Layout
+
+	edge [bend right] node [] {} (3) 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	(2) edge [bend right] node [] {} (1) 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	(3) edge [bend right] node [] {} (1); 	
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{tikzpicture}
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+System Architecture Diagram
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:architecture"
+
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+API
+\end_layout
+
+\begin_layout Standard
+The Teaplot server API utilises JSON (JavaScript Object Notation) 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "json"
+
+\end_inset
+
+ formatted documents for communicating data.
+\end_layout
+
+\begin_layout Standard
+Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "table:endpoints"
+
+\end_inset
+
+ shows a list of endpoints present in the API, which the client application
+ can make use of, and can be used for debugging, if need be.
+\end_layout
+
+\begin_layout Standard
+As the server program is assumed to be short-lived and in a controlled environme
+nt, no authentication takes place on the API.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+centering
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+API Endpoints
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "table:endpoints"
+
+\end_inset
+
+ 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{tabular}{l c p{4cm}} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+textbf{ Endpoint} & 
+\backslash
+textbf{ Type} & 
+\backslash
+textbf{ Description} 
+\backslash
+
+\backslash
+ 
+\backslash
+toprule
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+texttt{/api/default} & 
+\backslash
+texttt{GET} & Default parameters for the client (exp
+\backslash
+_id, metric, etc.) 
+\backslash
+
+\backslash
+ 
+\backslash
+midrule
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+texttt{/api/metrics} &
+\backslash
+texttt{GET} & Lists the available metrics, including SIFTR and Web10G metrics
+ if enabled 
+\backslash
+
+\backslash
+ 
+\backslash
+midrule
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+texttt{/api/metrics/get} & 
+\backslash
+texttt{POST} & Starts the extraction process for the experiment and metric
+ combination sent as POST data and returns 	the available data 
+\backslash
+
+\backslash
+ 
+\backslash
+midrule
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+texttt{/api/experiments} & 
+\backslash
+texttt{GET} & Lists the available experiments 
+\backslash
+
+\backslash
+ 
+\backslash
+midrule
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+texttt{/api/graph} & 
+\backslash
+texttt{POST} & Generates plottable data points for the experiment, metric,
+ and flow combination sent as POST data, and 	returns them as (x,y,z) coordinate
+s
+\backslash
+
+\backslash
+ 
+\backslash
+midrule
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+texttt{/api/paths} & 
+\backslash
+texttt{GET} & Returns a list of the directories in use by Teaplot for debugging
+ purposes 
+\backslash
+textbf{n.b.
+ not JSON formatted} 
+\backslash
+
+\backslash
+ 	
+\backslash
+bottomrule 
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{tabular}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+centering
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{sequencediagram}
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+footnotesize 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+sffamily 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+newthread{a}{ Web UI } 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+newinst{b}{ Server } 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+newinst{c}{ TEACUP } 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+scriptsize 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+begin{call}{a}{
+\backslash
+texttt{/default}}{b}{} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+end{call} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+begin{call}{a}{
+\backslash
+texttt{/metrics}}{b}{} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+end{call} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+begin{call}{a}{
+\backslash
+texttt{/experiments}}{b}{} 		
+\end_layout
+
+\begin_layout Plain Layout
+
+    	
+\backslash
+begin{call}{b}{
+\backslash
+texttt{read
+\backslash
+_experiment
+\backslash
+_ids()}}{c}{} 		
+\end_layout
+
+\begin_layout Plain Layout
+
+    	
+\backslash
+end{call} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+end{call} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+begin{call}{a}{
+\backslash
+texttt{/metrics/get}}{b}{}	 		
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+begin{call}{b}{
+\backslash
+texttt{get
+\backslash
+_extract
+\backslash
+_function()}}{c}{} 		
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+end{call}	 		
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+begin{call}{b}{
+\backslash
+texttt{extract
+\backslash
+_function()}}{c}{} 		
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+end{call} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+end{call} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+begin{call}{a}{
+\backslash
+texttt{/graph}}{b}{} 	
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+end{call} 
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{sequencediagram}
+\end_layout
+
+\end_inset
+
+
+\family sans
+\size scriptsize
+ 
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Teaplot API Request Sequence Diagram
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:apiseq"
+
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Server
+\end_layout
+
+\begin_layout Standard
+The server component is built using Django 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "django"
+
+\end_inset
+
+, a Python-based framework for building websites.
+ It was chosen due to its reliability, asynchronous nature, and wide selection
+ of website utility functions, which facilitated the construction of the
+ API.
+\end_layout
+
+\begin_layout Standard
+The data processing functions make heavy use of the NumPy 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "numpy"
+
+\end_inset
+
+ and SciPy 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "scipy"
+
+\end_inset
+
+ libraries, which are Python wrappers for manipulation of matrices and arrays
+ in native high-performance linear algebra libraries written in C and Fortran.
+\end_layout
+
+\begin_layout Standard
+To facilitate ease of integration into the Fabric framework used by TEACUP,
+ the server is run using uWSGI 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "uwsgi"
+
+\end_inset
+
+, which creates and manages the server using Django's WSGI interface.
+ 
+\end_layout
+
+\begin_layout Subsection
+Client
+\end_layout
+
+\begin_layout Standard
+The client is built using a combination of HTML5 and JavaScript, along with
+ a number of JavaScript libraries.
+ The base UI framework used is Bootstrap 3 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "bootstrap"
+
+\end_inset
+
+, supplemented by jQuery UI 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "jquery-ui"
+
+\end_inset
+
+.
+ The application also makes use of the templating engine 
+\family typewriter
+pure.js
+\family default
+ in order to greatly simplify construction of tables and lists in HTML.
+\end_layout
+
+\begin_layout Standard
+jQuery 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "jquery"
+
+\end_inset
+
+ is used for a multitude of tasks, but is primarily used for simplification
+ of communicating with the server API using its JSON functions.
+ 
+\end_layout
+
+\begin_layout Section
+Technical Requirements
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sect:requirements"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Subsection
+Server
+\end_layout
+
+\begin_layout Standard
+As the server performs the bulk of the calculations, a computer with a powerful
+ CPU and enough RAM to comfortably perform the required data manipulation
+ is recommended, especially if the server host is a virtual machine.
+ The exact performance requirements will be heavily dependent on the size
+ of the data sets and experiments being used.
+\end_layout
+
+\begin_layout Standard
+The Teaplot server component requires Python 2.7 and the following Python
+ libraries to be installed: 
+\end_layout
+
+\begin_layout Itemize
+Django v1.8.0 
+\end_layout
+
+\begin_layout Itemize
+NumPy v1.11.4 
+\end_layout
+
+\begin_layout Itemize
+SciPy v1.11.4 
+\end_layout
+
+\begin_layout Standard
+It also requires the following additional software and appropriate dependencies
+ to be installed:
+\end_layout
+
+\begin_layout Itemize
+uWSGI v2.0.11 
+\end_layout
+
+\begin_layout Itemize
+SPP v0.3.6 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "spp"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+TEACUP v1.1 
+\end_layout
+
+\begin_layout Standard
+The following JavaScript libraries are required for the client UI, and are
+ included in a minified form in the installation package: 
+\end_layout
+
+\begin_layout Itemize
+bootstrap.js v3.3.5 
+\end_layout
+
+\begin_layout Itemize
+jquery.js v2.1.4 
+\end_layout
+
+\begin_layout Itemize
+jquery-ui.js v1.11.4 
+\end_layout
+
+\begin_layout Itemize
+beebole-pure.js v2.83 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "purejs"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+stats.js d869e3f61c 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "statsjs"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+require.js v2.1.19 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "requirejs"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+three.js r71 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "threejs"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Note:
+\series default
+ Software package version listed above are the versions that were used during
+ the initial development of the platform.
+ Future and previous versions of packages may or may not work with Teaplot,
+ and could create issues or require code modification.
+ 
+\end_layout
+
+\begin_layout Subsection
+Client
+\end_layout
+
+\begin_layout Standard
+No accompanying software is required to be installed on the client's device;
+ the Teaplot client component takes place entirely within the browser.
+ It requires a modern WebGL compatible version of Google Chrome, Chromium,
+ or Firefox.
+ Microsoft Edge and Internet Explorer have not been tested, but recent versions
+ may be compatible.
+\end_layout
+
+\begin_layout Standard
+As the data is loaded in memory for plotting, large data sets may require
+ a large amount of RAM (i.e.
+ more than 1GB) to be available on the client's device.
+ Furthermore, the graphics card, WebGL implementation, and graphics drivers
+ on the client's computer must support shaders.
+ All modern Intel, Nvidia, and AMD graphics cards support WebGL shaders,
+ along with their Windows-based driver counterparts.
+ However, if the browser is running on a Linux-/Unix-based system, driver-side
+ support may be problematic, especially when using open-source implementations
+ of the drivers.
+ Problems could also arise if the web browser is being run inside a virtual
+ machine host.
+\end_layout
+
+\begin_layout Standard
+Due to the large RAM requirements of the client application, the user may
+ quickly reach the hard 4GB memory address space limit if they are using
+ a 32-bit web browser.
+ As such, it is recommended to use a 64-bit version of the operating system,
+ along with a 64-bit web browser binary.
+ Windows users are recommended to use the 64-bit version of Firefox Nightly
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "firefoxnightly"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It is recommended that for best compatibility and performance, the web browser
+ is run on a non-virtualised host running a 64-bit version of Linux, Windows,
+ or FreeBSD, along with a 64-bit web browser, using the manufacturer-supplied
+ proprietary/non-free drivers.
+\end_layout
+
+\begin_layout Section
+Installation Procedure
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sect:installation"
+
+\end_inset
+
+ As of TEACUP v1.1, Teaplot is included by default with the source files,
+ however certain dependencies relevant to Teaplot need to be installed.
+ The following installation procedure outlines the actions needed to install
+ Teaplot on a FreeBSD-based system.
+ Commands prefixed with 
+\family typewriter
+#
+\family default
+ denote that the execution should take place inside a shell with root privileges
+, while 
+\family typewriter
+$
+\family default
+ denotes user-level privileges.
+\end_layout
+
+\begin_layout Standard
+See Appendix 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "appendix:freebsd"
+
+\end_inset
+
+ for information regarding installation on FreeBSD 9.x.
+\end_layout
+
+\begin_layout Enumerate
+Install system dependencies.
+ For example, on FreeBSD
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+footnotemark[1]
+\end_layout
+
+\end_inset
+
+: 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+#
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+pkg install py27-django py27-scipy py27-numpy uwsgi spp
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Installation is now complete.
+ Teaplot can now be run from the fabfile directory (
+\family typewriter
+$FABFILE_DIR
+\family default
+) 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+footnotemark[2]
+\end_layout
+
+\end_inset
+
+ as a Fabric task called 
+\begin_inset Quotes eld
+\end_inset
+
+animate
+\begin_inset Quotes erd
+\end_inset
+
+: 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+$
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+cd $FABFILE_DIR
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+$
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+fab animate
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+footnotetext[1]{
+\end_layout
+
+\end_inset
+
+A minimum of 
+\family typewriter
+spp-0.3.6
+\family default
+ is required.
+ Refer to the SPP website for installation instructions 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "spp"
+
+\end_inset
+
+.
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+footnotetext[2]{
+\end_layout
+
+\end_inset
+
+Fabfile directory refers to a directory separate to TEACUP, which contains
+ a copy of 
+\family typewriter
+config.py
+\family default
+ and a copy of or link to TEACUP's 
+\family typewriter
+fabfile.py
+\family default
+, in which the 
+\family typewriter
+fab
+\family default
+ command is executed in order to generate experiment data.
+ This directory contains one or more 
+\begin_inset Quotes eld
+\end_inset
+
+experiment directories
+\begin_inset Quotes erd
+\end_inset
+
+, which contain the experimental results generated by TEACUP.
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Section
+Usage
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sect:usage"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+The steps involved with using the Teaplot tool are described in detail as
+ of TEACUP v1.1 in the 
+\begin_inset Quotes eld
+\end_inset
+
+TEACUP v1.1 -- Data Analysis Functions
+\begin_inset Quotes erd
+\end_inset
+
+ documentation.
+ 
+\end_layout
+
+\begin_layout Section
+Potential Further Work
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sect:future"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Subsection
+Finalisation of 3D Graphing Functions
+\end_layout
+
+\begin_layout Standard
+As previously outlined, the 3D graph functions of Teaplot are currently
+ considered experimental, as not all combinations of metrics are able to
+ be successfully plotted.
+ The current implementation on the server makes use of the SciPy class 
+\family typewriter
+interpolate.InterpolatedUnivariateSpline
+\family default
+ to generate an interpolation function using the experimental data, in order
+ to create a 3D mapping against a second data series and time.
+\end_layout
+
+\begin_layout Standard
+Further work in this area could involve identifying combinations of metrics
+ which break the interpolation system, and solving the issues relating to
+ that.
+ Furthermore, the system could be extended to produce 3D scatter plots using
+ three distinct metrics using a bivariate interpolation class, such as 
+\family typewriter
+interpolate.BivariateSpline
+\family default
+.
+\end_layout
+
+\begin_layout Standard
+The file relating to the server-side processing of the data is 
+\family typewriter
+animate/api/teaplot.py
+\family default
+.
+\end_layout
+
+\begin_layout Subsection
+User Interface
+\end_layout
+
+\begin_layout Standard
+Refinements to the user interface could be made.
+ Such changes should be made to the 
+\family typewriter
+css/teaplot.css
+\family default
+, 
+\family typewriter
+js/teaplot.js
+\family default
+, and 
+\family typewriter
+index.html
+\family default
+ files inside the 
+\family typewriter
+animate/static/
+\family default
+ directory.
+\end_layout
+
+\begin_layout Standard
+Additional changes can be made to the Bootstrap CSS settings in order to
+ further reduce visual clutter and size of lists.
+ Changes should be made on the Bootstrap customisation page at 
+\begin_inset Flex Flex:URL
+status open
+
+\begin_layout Plain Layout
+
+http://getbootstrap.com/customize/
+\end_layout
+
+\end_inset
+
+ using the 
+\family typewriter
+/animate/static/config.json
+\family default
+ file included with Teaplot as the base.
+ The resulting Bootstrap files can safely overwrite the existing files in
+ Teaplot.
+\end_layout
+
+\begin_layout Subsection
+Grid Rendering
+\end_layout
+
+\begin_layout Standard
+Currently, the grids are not being calculated correctly, and only appear
+ in the proper dimensions using the current statically set dimensions of
+ the graph.
+ The grid rendering code should be replaced (in 
+\family typewriter
+animate/static/js/graph.js
+\family default
+), in order to allow for dynamically resizeable graphs and grid spacing.
+\end_layout
+
+\begin_layout Subsection
+Memory Usage
+\end_layout
+
+\begin_layout Standard
+Substantial reduction in memory usage is possible if the 
+\family typewriter
+three.js
+\family default
+ Geometry objects are changed to BufferGeometry objects, which will move
+ a large chunk of the used browser memory into buffers on the GPU.
+ However, this may take some effort and knowledge, as implementing shaders
+ with BufferGeometry objects is not as simple as with normal Geometry.
+\end_layout
+
+\begin_layout Standard
+Further reductions are possible using point thinning server-side, in order
+ to reduce the amount of data points being rendered simultaneously by the
+ client.
+ However, a considerable bonus is had by rendering all of the available
+ points, as the user is currently able to zoom in to see the high resolution
+ of the points.
+ A potential work-around is to have a 
+\begin_inset Quotes eld
+\end_inset
+
+streaming
+\begin_inset Quotes erd
+\end_inset
+
+ interface between the client and server, where the client requests the
+ data at a resolution/point thinning factor relative to the zoom level in
+ real-time.
+\end_layout
+
+\begin_layout Standard
+Changes to the 3D rendering in the Teaplot client should be made in the
+ 
+\family typewriter
+animate/static/js/graph.js
+\family default
+ file.
+\end_layout
+
+\begin_layout Subsection
+Text
+\end_layout
+
+\begin_layout Standard
+The axis labels rendered on the graphs seem to be affected by some size
+ limit -- long labels are cut off.
+ The cause of this is unknown, however text rendering in 
+\family typewriter
+three.js
+\family default
+/WebGL is known to be problematic.
+ Potential solutions are to move text rendering out of the WebGL canvas,
+ instead creating HTML text labels that float in the correct positions on
+ the graph.
+\end_layout
+
+\begin_layout Standard
+As this is related to 3D rendering in the Teaplot client, changes should
+ be made in the 
+\family typewriter
+animate/static/js/graph.js
+\family default
+ file.
+\end_layout
+
+\begin_layout Standard
+Long test IDs currently break some sections of the UI, namely the 
+\begin_inset Quotes eld
+\end_inset
+
+Y Axis Flow Mapping
+\begin_inset Quotes erd
+\end_inset
+
+ table and the 
+\begin_inset Quotes eld
+\end_inset
+
+Legend
+\begin_inset Quotes erd
+\end_inset
+
+ panel.
+ The CSS relating to these UI components should be modified to be fixed-width,
+ and to use proper text wrapping.
+\end_layout
+
+\begin_layout Standard
+These modifications can be made inside 
+\family typewriter
+animate/static/css/teaplot.css
+\family default
+.
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset label
+LatexCommand label
+name "sect:Conclusion"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This report has described the architecture, functions, dependencies, and
+ technical details pertaining to Teaplot v0.2, the browser-based 3D visualisation
+ extension for TEACUP v1.1, along with ideas for potential bug fixes and
+ improvements which were identified during development.
+ 
+\end_layout
+
+\begin_layout Section*
+Acknowledgements
+\end_layout
+
+\begin_layout Standard
+We would like to thank Jonathan Kua and Rasool Al-Saadi for their invaluable
+ help with testing Teaplot and providing sample data, and Djuro Mirkovic
+ for providing the original foundation for the 3D graphing engine.
+\end_layout
+
+\begin_layout Section*
+Copyright and License
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Copying"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This document based on 
+\begin_inset Quotes eld
+\end_inset
+
+Teaplot v0.1: A browser-based 3D engine for animating TEACUP experiment data
+\begin_inset Quotes erd
+\end_inset
+
+ by Isaac True, Grenville Armitage and Philip Branch, is 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+copyright
+\end_layout
+
+\end_inset
+
+
+\begin_inset space ~
+\end_inset
+
+2015 -- 2016 CAIA, Swinburne University of Technology.
+ The original was released in July 1st, 2016 under a Creative Commons Attributio
+n-ShareAlike 4.0 International License (CC BY-SA 4.0, 
+\begin_inset Flex Flex:URL
+status open
+
+\begin_layout Plain Layout
+
+http://creativecommons.org/licenses/by-sa/4.0
+\end_layout
+
+\end_inset
+
+).
+ Based on a work at 
+\begin_inset Flex Flex:URL
+status open
+
+\begin_layout Plain Layout
+
+http://caia.swin.edu.au/reports/150828A/CAIA-TR-150828A.pdf
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+\start_of_appendix
+FreeBSD 9.x (or later) Installation 
+\begin_inset CommandInset label
+LatexCommand label
+name "appendix:freebsd"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+The easiest method for installing the required packages on FreeBSD is to
+ use the 
+\family typewriter
+pkgng
+\family default
+ framework, rather than the standard ports tree.
+ Firstly, 
+\family typewriter
+pkgng
+\family default
+ must be configured.
+ This can be done by executing the following commands:
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+#
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+portsnap fetch extract
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+#
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+echo "WITH_PKGNG=yes" >> /etc/make.conf
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+#
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+make -C /usr/ports/ports-mgmt/pkg install clean
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+#
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+pkg2ng
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Following this, the package repository needs to be initialised:
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+#
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+mkdir /etc/pkg
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Edit the contents of 
+\family typewriter
+/etc/pkg/FreeBSD.conf
+\family default
+ to be the following:
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+FreeBSD: {
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+url: "pkg+http://pkg.FreeBSD.org/${ABI}/latest",
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+mirror_type: "srv",
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+enabed: "yes"
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+}
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Lastly, execute:
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+sh{
+\end_layout
+
+\end_inset
+
+#
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+pkg update
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Following the successful execution of these commands, the 
+\family typewriter
+pkgng
+\family default
+ framework can be used to install packages.
+ 
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "teaplot-references"
+options "IEEEtran"
+
+\end_inset
+
+ 
+\end_layout
+
+\end_body
+\end_document

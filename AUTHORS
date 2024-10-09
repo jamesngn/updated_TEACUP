@@ -1,0 +1,9 @@
+Since TEACUP 0.1
+  Sebastian Zander (sebastian.zander@gmx.de) -- Primary developer
+  Grenville Armitage (garmitage@swin.edu.au) -- Project leader / crash-test dummy
+  
+Contributors since TEACUP 1.0
+  Rasool Al-Saadi (ralsaadi@swin.edu.au) -- ttprobe logger support
+  Jonathan Kua (jtkua@swin.edu.au) -- DASH-based traffic generator support
+  Isaac True -- teaplot 0.1 (replay animation)
+  Djuro Mirkovic (dmirkovic@swin.edu.au) / Russell Collom -- Enhancements for teaplot 0.2

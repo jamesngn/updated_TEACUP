@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>TeaPlot v0.2 - TEACUPS Visualiser</title>
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<link href="css/slider.css" rel="stylesheet">
+<link href="css/theme.css" rel="stylesheet">
+<link href="css/teaplot.css" rel="stylesheet">
+</head>
+
+<!--
+   Copyright (c) 2015 Centre for Advanced Internet Architectures,
+   Swinburne University of Technology. All rights reserved.
+
+   Author: Isaac True (itrue@swin.edu.au)
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+   1. Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+
+   THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+   ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+   FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+   OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+   OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+   SUCH DAMAGE.
+    -->
+<body>
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <!--         <div class="container"> -->
+        <div class="navbar-header">
+            <a class="navbar-brand">TeaPlot v0.2</a>
+        </div>
+
+        <div id="navbar" class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+                <li><a href='#' data-toggle="modal" data-target="#metricSelection">Metrics</a></li>
+                <li><a href='#' data-toggle="modal" data-target="#flowSelection">Flows</a></li>
+                <li><a href='#' data-toggle="modal" data-target="#graphConfig">Graphs</a></li>
+                <li><a href='#' data-toggle="modal" data-target="#about">About</a></li>
+            </ul>        
+            <ul class="nav navbar-nav pull-right" style='margin-top: 8px'>
+                <li><button type='button' class='btn btn-success' id='buttonStart' style='margin-right: 8px'>Play</button></li> <!-- Changed  -->
+                <li><button type='button' class='btn btn-danger' id='buttonStop' style='margin-right: 8px'>Pause</button></li> <!-- Changed  -->
+                <li><button type='button' class='btn btn-warning' id='buttonReset' style='margin-right: 205px'>Reset</button></li> <!-- Changed  -->
+                <li><button type='button' class='btn btn-primary' id='buttonExport' style='margin-right: 8px'>Export Command</button></li> <!-- Changed  -->
+                <li><button type='button' class='btn btn-primary' id='buttonResetView' style='margin-right: 8px'>Reset View</button></li> <!-- Changed  -->
+                <li><button type='button' class='btn btn-primary' data-toggle="button" id='button3DView' style='margin-right: 8px'>Toggle 3D View</button></li> <!-- Changed  -->
+                <li><button type='button' class='btn btn-primary' data-toggle="button" id='buttonControls' style='margin-right: 8px'>Toggle Controls</button></li> <!-- Changed  -->
+                <li><button type='button' class='btn btn-primary' data-toggle="button" id='buttonGrid' style='margin-right: 8px'>Toggle Grid</button></li> <!-- Changed  -->
+            </ul>
+            <!--             </div> -->
+        </div>
+    </nav>
+
+    <!-- Graph config modal dialogue -->
+    <div class="modal fade" id="graphConfig" tabindex="-1" role="dialog" aria-labelledby="graphConfigLabel">
+        <div class="modal-dialog" role="document" style='width: 900px;'>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="graphConfigLabel">Graph Configuration</h4>
+                </div>
+
+                <div class="modal-body" id='graphConfigBody'>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">General</div>
+                        <!-- <div class="panel-body"></div> -->
+                        <table class='table'>
+                            <tbody>
+                                <tr>
+                                    <td>Number of graphs</td>
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn btn-default dropdown-toggle" type="button" id="gridDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                                1 <span class="caret"></span>
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="gridDropdown" id='gridDropdownList'>
+                                                <li><a href='#'>1</a></li>
+                                                <li><a href='#'>2</a></li>
+                                                <li><a href='#'>3</a></li>
+                                                <li><a href='#'>4</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Graph Configuration</div>
+                        <!-- <div class="panel-body"></div> -->
+                        <table class='table'>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                </tr>
+                            </thead>
+                            <tbody id='graphConfigList'>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- End Graph config modal dialogue -->
+
+    <!-- Flow selection modal dialogue -->
+    <div class="modal fade" id="flowSelection" tabindex="-1" role="dialog" aria-labelledby="flowSelectionLabel">
+        <div class="modal-dialog" role="document" style='width: 90%;'>
+            <!-- Could add modal-lg (default width of 900px) -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="flowSelectionLabel">Flow Selection</h4>
+                </div>
+                <div class="modal-body" id='flowSelectionBody'>
+
+                    <!-- Djuro start here -->
+                    <div class="pull-left">
+                        <p>Notation used: Source-IP_Source-Port_Destination-IP_Destination-Port&nbsp;&nbsp;&nbsp;(Start-Time(seconds)&nbsp;&nbsp;&nbsp;Duration-of-Flow(seconds)&nbsp;&nbsp;&nbsp;Number-of-Data-Points)</p>
+                        <p>eg. 172.16.10.11_5000_172.16.11.14_53864&nbsp;&nbsp;&nbsp;(0.02&nbsp;&nbsp;&nbsp;62.74&nbsp;&nbsp;&nbsp;3751)</p>
+                    </div>
+
+                    <div class="pull-right">
+                        <button type="button" class="btn btn-primary flowUpdateButton" style='margin-right: 5px'>Update View</button> <!-- Changed  -->
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                    <div>
+                        <div class="accordion-option">
+                            <h3 class="title">Available flows</h3>
+                            <a href="javascript:void(0)" class="toggle-accordion toggle-accordion-flow" accordion-id="#accordionFlowId">Expand all</a>
+                        </div>
+                        <div class="clearfix"></div>
+                        <div id="flowIdData"></div>
+                    </div>
+                    <!-- Djuro end here -->
+
+                    <!--                     <div class="panel panel-default">
+                        <div class="panel-heading">Available Flows</div>
+                        <table class='table table-bordered'>
+                            <thead>
+                                <tr>
+                                    <th>Metric Name</th>
+                                    <th>Flows</th>
+                                </tr>
+                            </thead>
+                            <tbody id="flowSelectionTable">
+                            </tbody>
+                        </table>
+                    </div> -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Y Axis Flow Mapping</div>
+                        <table class='table table-bordered wrappedTable'>
+                            <colgroup>
+                                <col style="width: 9%">
+                                <col style="width: 60%">
+                                <col style="width: 7%">
+                                <col style="width: 12%">
+                                <col style="width: 12%">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Flow</th>
+                                    <th>Graph</th>
+                                    <th>X Axis</th>
+                                    <th>Z Axis</th>
+                                </tr>
+                            </thead>
+                            <tbody id="flowMappingTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary flowUpdateButton">Update View</button> <!-- Changed  -->
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End flow selection modal dialogue -->
+
+    <!-- Metric selection modal dialogue -->
+    <div class="modal fade" id="metricSelection" tabindex="-1" role="dialog" aria-labelledby="metricSelectionLabel">
+        <div class="modal-dialog" role="document" style='width: 90%;'>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="metricSelectionLabel">Metric Selection</h4>
+                </div>
+                <div class="modal-body" id='metricSelectionBody'>
+                    <div id='metricSelectionContent'>
+                        <div class="alert alert-danger" role="alert" style="display: none" id="metricDataSourceError">
+                            <button type="button" class="close" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                            <strong>Error!</strong>&nbsp<span class="message">One or more data sources are not in the correct format</span>
+                        </div>
+                        <div class="pull-right">
+                            <button type="button" class="btn btn-primary metricsUpdateButton" style='margin-right: 5px'>Update Flows</button> <!-- Changed  -->
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        </div>
+                        <ul class="nav nav-tabs" id="metricsTabContent">
+                            <li class="active"><a href="#metricsTabDataSources" data-toggle="tab">Data Sources</a></li>
+                            <li><a href="#metricsTabMetrics" data-toggle="tab">Metrics</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="metricsTabDataSources">
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        <!--                                     Djuro start here -->
+                                        <!--                                         <div class="form-group">
+                                            <label for="metricsTabDataSourcesFilter">Source Filters (Semicolon separated)</label> <input class="form-control" id="metricsTabDataSourcesFilter" placeholder="e.g. S_192.168.1.1_*;D_…" type="text">
+                                        </div> -->
+                                        <!--                                     Djuro end here -->
+
+                                        <!-- Djuro start here - experimenting here -->
+                                        <!--                                         <a href="#" class="btn btn-primary openall">Open all</a> <a href="#" class="btn btn-primary closeall">Close all</a>
+
+                                        <hr /> -->
+
+                                        <div>
+                                            <div class="accordion-option">
+                                                <h3 class="title">Experiments</h3>
+                                                <a href="javascript:void(0)" class="toggle-accordion toggle-accordion-exp" accordion-id="#accordionExpId">Expand all</a>
+                                            </div>
+                                            <div class="clearfix"></div>
+                                            <div id="expIdData"></div>
+                                        </div>
+
+                                        <!-- Djuro end here - experimenting here -->
+
+                                        <!--                                     Djuro start here -->
+                                        <!--                                         <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Experiment ID</th>
+                                                    <th>Select</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="metricsTabDataSourcesExp">
+                                            </tbody>
+                                        </table> -->
+                                        <!--                                     Djuro end here -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="metricsTabMetrics">
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        <div>
+                                            <div class="accordion-option">
+                                                <h3 class="title">Metrics</h3>
+                                                <a href="javascript:void(0)" class="toggle-accordion toggle-accordion-metric" accordion-id="#accordionMetricId">Expand all</a>
+                                            </div>
+                                            <div class="clearfix"></div>
+                                            <div id="metricIdData"></div>
+                                        </div>
+                                    </div>
+                                    <!--                                     <table class='table table-hover table-bordered'>
+                                        <thead>
+                                            <tr>
+                                                <th>Metric</th>
+                                                <th>Scale</th>
+                                                <th>Show</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="metricsTabDataSourcesTable"></tbody>
+                                    </table> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary metricsUpdateButton">Update Flows</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End metric selection modal dialogue -->
+
+    <!-- Export modal dialogue -->
+    <div class="modal fade" id="exportView" tabindex="-1" role="dialog" aria-labelledby="exportViewLabel">
+        <div class="modal-dialog" role="document" style='width: 1000px;'>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="exportViewLabel">Export Command Line Arguments</h4>
+                </div>
+                <div class="modal-body" id='exportViewBody'>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Command line arguments</div>
+                        <div class="panel-body">
+                            <textarea class="form-control" id="exportViewText" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End export modal dialogue -->
+    <!-- Flow name modal dialogue -->
+    <div class="modal fade" id="flowName" tabindex="-1" role="dialog" aria-labelledby="flowNameLabel">
+        <div class="modal-dialog" role="document" style='width: 1000px;'>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="flowNameLabel">Rename Flow</h4>
+                </div>
+                <div class="modal-body" id='flowNameBody'>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <span id="flowNameHeading"></span>
+                        </div>
+                        <div class="panel-body">
+                            <label for="flowNameText">Name to display: </label><input type="text" class="form-control" id="flowNameText">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" id="flowNameUpdate">Update</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- About modal dialogue -->
+    <div class="modal fade" id="about" tabindex="-1" role="dialog" aria-labelledby="aboutLabel">
+        <div class="modal-dialog" role="document" style='width: 400px;'>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="aboutLabel">About Teaplot v0.2</h4>
+                </div>
+                <div class="modal-body" id='aboutBody'>
+                    <p style="align: justify">Teaplot v0.2 was patched in by Djuro Mirkovic &lt;dmirkovic@swin.edu.au&gt; and Russell Collom &lt;rcollom@swin.edu.au&gt; to improve UI and apply bug fixes.</p>
+                    <p style="align: justify">Teaplot v0.1 was developed by Isaac True &lt;itrue@swin.edu.au&gt; at the Centre for Advanced Internet Architectures (CAIA), Swinburne University of Technology.</p>
+                    <p>
+                        TEACUP Homepage: <a href="http://caia.swin.edu.au/tools/teacup/">http://caia.swin.edu.au/tools/teacup/</a>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- End flow name modal dialogue -->
+    <div id='threejs'></div>
+
+    <div class="controls">
+        <div class="panel panel-default">
+            <div class="panel-heading">Controls</div>
+            <div class="panel-body">
+                <div class="control-container">
+                    <label for="controlXMin">X Min: </label>&nbsp<span class="control-display pull-right"></span>
+                    <div class="control-slider" id="controlXMin"></div>
+                </div>
+
+                <div class="control-container">
+                    <label for="controlXMax">X Max: </label>&nbsp<span class="control-display pull-right"></span>
+                    <div class="control-slider" id="controlXMax"></div>
+                </div>
+                <div class="control-container">
+                    <label for="controlYMin">Y Min: </label>&nbsp<span class="control-display pull-right"></span>
+                    <div class="control-slider" id="controlYMin"></div>
+                </div>
+                <div class="control-container">
+                    <label for="controlYMax">Y Max: </label>&nbsp<span class="control-display pull-right"></span>
+                    <div class="control-slider" id="controlYMax"></div>
+                </div>
+                <div class="control-container">
+                    <label for="controlZMin">Z Min: </label>&nbsp<span class="control-display pull-right"></span>
+                    <div class="control-slider" id="controlZMin"></div>
+                </div>
+                <div class="control-container">
+                    <label for="controlZMax">Z Max: </label>&nbsp<span class="control-display pull-right"></span>
+                    <div class="control-slider" id="controlZMax"></div>
+                </div>
+                <hr />
+                <div>
+                    <label for="controlZMax">Animation Time: </label>&nbsp<span class="pull-right" id='animationTimeDisplay'></span>
+                    <div id="controlAnimationTime"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">Legend</div>
+            <div class="panel-body">
+                <ul class="list-unstyled " id="legendList">
+
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="loadPanel">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <strong>Loading</strong><span class="glyphicon glyphicon-refresh spinner pull-right"></span>
+            </div>
+            <div class="panel-body">Please wait...</div>
+        </div>
+    </div>
+    <script type="text/javascript" src="js/require.min.js" data-main="js/config" charset="UTF-8"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+TEACUP versions prior to 1.0 were developed as part of a project
+funded by Cisco Systems and titled "Study in TCP Congestion Control
+Performance In A Data Centre". This was a collaborative effort between
+Swinburne University of Technology's Centre for Advanced Internet
+Architectures and Fred Baker of Cisco Systems. These may
+be found at http://caia.swin.edu.au/tools/teacup/downloads.html
+
+Starting with TEACUP v1.0, development will be community supported
+and publicly hosted at https://sourceforge.net/projects/teacup/ 

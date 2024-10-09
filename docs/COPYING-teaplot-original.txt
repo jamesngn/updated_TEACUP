@@ -1,0 +1,12 @@
+This tarball contains the LaTeX source code required to build:
+
+ "Teaplot v0.1: A browser-based 3D engine for animating TEACUP experiment data"
+  by Isaac True, Grenville Armitage and Philip Branch
+  
+(c) copyright 2015-2016 CAIA, Swinburne University of Technology.
+
+As of July 1st 2016 these files have been licensed under a Creative Commons
+Attribution-ShareAlike 4.0 International License ("CC BY-SA 4.0",
+http://creativecommons.org/licenses/by-sa/4.0).
+
+Based on work originally released at http://caia.swin.edu.au/reports/150828A/CAIA-TR-150828A.pdf 
