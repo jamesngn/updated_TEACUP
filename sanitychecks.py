@@ -450,8 +450,7 @@ def check_host_v2(c: Connection):
     htype = get_type_cached(env.host_string)
     
     print("connection: ", cnn)
-    
-    
+    print("htype: ", htype)    
     
     if cnn.host in config.TPCONF_router:
         print("router")
