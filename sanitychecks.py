@@ -724,17 +724,17 @@ def sanity_checks_v2(c):
     """
     
     all_hosts = config.TPCONF_router + config.TPCONF_hosts
-    
-    group = SerialGroup(*all_hosts, Config(overrides={
-        "connect_kwargs": {
-            "password": "password"
-        }
-    })
-    )
 
-
-
-    for conn in group:
+    for host in all_hosts:
         print(f"Running sanity checks on {conn.host}")
-        check_host_v2(conn)
-
+        
+        # Use custom config to pass passwords
+        custom_config = Config(overrides={
+            "connect_kwargs": {
+                "password": "password"
+            }
+        })
+        
+        with Connection(host, config=custom_config) as conn:
+            # Create a new connection with the custom config and run the sanity checks
+            check_host_v2(conn)
