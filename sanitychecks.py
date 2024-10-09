@@ -725,18 +725,13 @@ def sanity_checks_v2(c):
     
     all_hosts = config.TPCONF_router + config.TPCONF_hosts
     
-    group = SerialGroup(*all_hosts)
-    
-    print("group: ", group)
-    env.ssh_config_path = ""
-    
-    configV2 = Config(overrides={
-    "connect_kwargs": {
-        "password": "password"
-    }
-})
-    
-    print("config: ", configV2)
+    group = SerialGroup(*all_hosts, Config(overrides={
+        "connect_kwargs": {
+            "password": "password"
+        }
+    })
+    )
+
 
 
     for conn in group:
