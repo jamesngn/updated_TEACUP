@@ -728,9 +728,9 @@ def sanity_checks_v2(c):
     group = SerialGroup(*all_hosts)
     
     print("group: ", group)
-    config = Config.from_v1(env)
+    configV2 = Config.from_v1(env)
     
-    print("config: ", config)
+    print("config: ", configV2)
     
     # for conn in group:
     #     print(f"Running sanity checks on {conn.host}")
