@@ -34,7 +34,7 @@ import os
 import re
 import datetime
 import config
-from fabric2 import Connection, task as fabric_v2_task
+from fabric2 import Connection, SerialGroup, task as fabric_v2_task
 from fabric.api import task as fabric_task, warn, local, run, execute, abort, hosts, \
     env, settings, parallel, serial, puts, put
 from hosttype import get_type_cached, get_type_cached_v2
@@ -715,4 +715,19 @@ def sanity_checks():
         config.TPCONF_hosts)
 
     execute(check_time_sync, hosts=config.TPCONF_router + config.TPCONF_hosts)
+    
+    
+@fabric_v2_task
+def sanity_checks_v2(c):
+    """
+    Perform all sanity checks, e.g., check for needed tools and connectivity
+    """
+    
+    all_hosts = config.TPCONF_router + config.TPCONF_hosts
+    
+    group = SerialGroup(*all_hosts)
+    
+    for conn in group:
+        print(f"Running sanity checks on {conn.host}")
+        check_host_v2(conn)
 
