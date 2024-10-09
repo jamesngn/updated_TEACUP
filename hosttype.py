@@ -95,16 +95,17 @@ def get_type():
     return htype
 
 @fabric_task_v2
-def get_type_v2(c:Connection):
+def get_type_v2(c: Connection):
     "Get type/OS of host, e.g. Linux"
     
-    with hide('debug', 'warnings'):
-        htype = c.run('uname -s', pty=False)
-        
-        print("htype: ", htype)
-        
+    # Run the command and get the Result object
+    result = c.run('uname -s', pty=False)
+    
+    # Extract the output from the result
+    htype = result.stdout.strip()  # Remove any extra whitespace or newlines
+    print("htype:", htype)
 
-    # ignore Windows version bit of output
+    # Ignore Windows version bit of output
     if htype[0:6] == "CYGWIN":
         htype = "CYGWIN"
 
