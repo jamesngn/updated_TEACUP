@@ -37,7 +37,7 @@ import config
 from fabric2 import Connection, task as fabric_v2_task
 from fabric.api import task as fabric_task, warn, local, run, execute, abort, hosts, \
     env, settings, parallel, serial, puts, put
-from hosttype import get_type_cached
+from hosttype import get_type_cached, get_type_cached_v2
 from hostint import get_netint_cached, get_netint_windump_cached
 from hostmac import get_netmac_cached
 
@@ -352,55 +352,6 @@ def check_config():
 
     puts('Config file looks OK')
     
-
-@fabric_task
-def checkHost():
-    "Check that needed tools are installed on hosts"
-    
-    # get type of current host
-    htype = get_type_cached(env.host_string)
-    
-    for host in config.TPCONF_router + config.TPCONF_hosts:
-        with Connection(host) as c:
-            # run checks
-            if env.host_string in config.TPCONF_router:
-                if htype == 'FreeBSD':
-                    c.run('which ipfw')
-                if htype == "Linux":
-                    c.run('which tc')
-                    c.run('which iptables')
-                # XXX check that kernel tick rate is high (>= 1000)
-            else:
-                if htype == 'FreeBSD':
-                    c.run('which md5')
-                    c.run('which tcpdump')
-                elif htype == 'Darwin':
-                    c.run('which md5')
-                    c.run('which tcpdump')
-                    c.run('which dsiftr-osx-teacup.d')
-                elif htype == 'Linux':
-                    c.run('which ethtool')
-                    c.run('which md5sum')
-                    c.run('which tcpdump')
-                elif htype == 'CYGWIN':
-                    c.run('which WinDump')
-                    c.run('which win-estats-logger')
-                    
-                    
-            c.run('which killall', pty=False)
-            c.run('which pkill', pty=False)
-            c.run('which ps', pty=False)
-            c.run('which gzip', pty=False)
-            c.run('which dd', pty=False)
-
-            # check for traffic sender/receiver tools
-            c.run('which iperf', pty=False)
-            c.run('which ping', pty=False)
-            c.run('which httperf', pty=False)
-            c.run('which lighttpd', pty=False)
-            c.run('which nttcp', pty=False)
-        
-
 ## Check hosts for necessary tools (TASK)
 @fabric_task
 @parallel
@@ -494,7 +445,7 @@ def check_host_v2(c: Connection):
     "Check that needed tools are installed on hosts"
 
     # get type of current host
-    htype = get_type_cached(c.host)
+    htype = get_type_cached_v2(c.host)
     
     if c.host in config.TPCONF_router:
         if htype == 'FreeBSD':

@@ -29,6 +29,7 @@
 #
 # $Id: hosttype.py,v e7ea179b29d8 2015/05/25 04:28:23 sebastian $
 
+from fabric2 import Connection, task as fabric_task_v2
 from fabric.api import task, warn, local, run, execute, abort, hosts, hide
 
 ## Map external ips/names to OS (automatically determined)
@@ -60,6 +61,23 @@ def get_type_cached(host='', for_local='0'):
                     hosts=host).items()))  # Convert to list for concatenation
         return host_os.get(host, '')
 
+def get_type_cached_v2(c:Connection, for_local='0'):
+    global host_os
+    global ctrl_host_os
+    
+    host = c.host
+
+    if for_local == '1':
+        if ctrl_host_os == '':
+            ctrl_host_os = c.local('uname -s', capture=True)
+        return ctrl_host_os
+    else:
+        if host not in host_os:
+            host_os = dict(
+                list(host_os.items()) +  # Convert to list for concatenation
+                list(get_type_v2(c).items()))  # Convert to list for concatenation
+        return host_os.get(host, '')
+
 
 ## Get host operating system type (TASK)
 #  @return Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
@@ -69,6 +87,19 @@ def get_type():
 
     with hide('debug', 'warnings'):
         htype = run('uname -s', pty=False)
+
+    # ignore Windows version bit of output
+    if htype[0:6] == "CYGWIN":
+        htype = "CYGWIN"
+
+    return htype
+
+@fabric_task_v2
+def get_type_v2(c:Connection):
+    "Get type/OS of host, e.g. Linux"
+
+    with hide('debug', 'warnings'):
+        htype = c.run('uname -s', pty=False)
 
     # ignore Windows version bit of output
     if htype[0:6] == "CYGWIN":
