@@ -447,7 +447,7 @@ def check_host_v2(c: Connection):
     print("Checking host %s" % c.host)
 
     # get type of current host
-    htype = get_type_cached_v2(c.host)
+    htype = get_type_cached_v2(c)
     
     if c.host in config.TPCONF_router:
         if htype == 'FreeBSD':
