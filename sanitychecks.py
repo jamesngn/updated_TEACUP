@@ -48,33 +48,6 @@ from trafficgens import start_iperf, start_ping, \
     start_nttcp, start_httperf_incast_n, \
     start_fps_game, start_dash_streaming_dashjs, start_nginx_server
 
-import logging
-
-class HostLoggerAdapter(logging.LoggerAdapter):
-    def process(self, msg, kwargs):
-        # Add host information to the message
-        return f"[{self.extra['host']}] {msg}", kwargs
-
-# Set up logging
-logging.basicConfig(
-    filename='fabric_output.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(host)s - %(message)s'
-)
-
-# This function initializes the logger for a specific host
-# This function initializes the logger for a specific host
-def init_logger(host):
-    logger = logging.getLogger(host)
-    handler = logging.FileHandler(f'{host}_output.log')
-    formatter = logging.Formatter('%(asctime)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
-    
-    # Create and return LoggerAdapter with host info
-    return HostLoggerAdapter(logger, {'host': host})
-
 
 def _args(*_nargs, **_kwargs):
     "Collect parameters for a call"
@@ -469,74 +442,83 @@ def check_host():
 @fabric_v2_task
 @parallel
 def check_host_v2(c: Connection):
-    # Initialize logger for the current host
-    logger = init_logger(c.host)
+    "Check that needed tools are installed on hosts"
     
-    # Log the current host
-    logger.info(f"Running checks on {c.host}")
-    
-    # Get type of current host
+    # get type of current host
     htype = get_type_cached_v2(c)
-    logger.info(f"Host type: {htype}")
-
+    
+    
     if c.host in config.TPCONF_router:
-        logger.info("Checking router-specific tools...")
         if htype == 'FreeBSD':
-            result = c.run('which ipfw', warn=True)
-            logger.info(result.stdout.strip())
+            c.run('which ipfw')
         if htype == "Linux":
-            result = c.run('which tc', warn=True)
-            logger.info(result.stdout.strip())
-            result = c.run('which iptables', warn=True)
-            logger.info(result.stdout.strip())
+            c.run('which tc')
+            c.run('which iptables')
         # XXX check that kernel tick rate is high (>= 1000)
     else:
-        logger.info("Checking general host tools...")
         if htype == 'FreeBSD':
-            result = c.run('which md5', warn=True)
-            logger.info(result.stdout.strip())
-            result = c.run('which tcpdump', warn=True)
-            logger.info(result.stdout.strip())
+            c.run('which md5')
+            c.run('which tcpdump')
         elif htype == 'Darwin':
-            result = c.run('which md5', warn=True)
-            logger.info(result.stdout.strip())
-            result = c.run('which tcpdump', warn=True)
-            logger.info(result.stdout.strip())
-            result = c.run('which dsiftr-osx-teacup.d', warn=True)
-            logger.info(result.stdout.strip())
+            c.run('which md5')
+            c.run('which tcpdump')
+            c.run('which dsiftr-osx-teacup.d')
         elif htype == 'Linux':
-            result = c.run('which ethtool', warn=True)
-            logger.info(result.stdout.strip())
-            result = c.run('which md5sum', warn=True)
-            logger.info(result.stdout.strip())
-            result = c.run('which tcpdump', warn=True)
-            logger.info(result.stdout.strip())
+            c.run('which ethtool')
+            c.run('which md5sum')
+            c.run('which tcpdump')
+            #run('which web10g-listconns')
+            #run('which web10g-readvars')
+            #updated for ttprobe support
+            # try:
+            #     linux_tcp_logger = config.TPCONF_linux_tcp_logger
+            # except AttributeError:
+            #     linux_tcp_logger = 'web10g'
+            # if linux_tcp_logger == 'ttprobe' or linux_tcp_logger == 'both':
+            #     #checking the availability of ttprobe.ko kernel module
+            #     run('ls /lib/modules/$(uname -r)/extra/ttprobe.ko')
+            # if linux_tcp_logger == 'web10g' or linux_tcp_logger == 'both':
+            #     run('which web10g-logger')
         elif htype == 'CYGWIN':
-            result = c.run('which WinDump', warn=True, pty=False)
-            logger.info(result.stdout.strip())
-            result = c.run('which win-estats-logger', warn=True, pty=False)
-            logger.info(result.stdout.strip())
-
-            # Handle ntp
-            result = c.run('ls "/cygdrive/c/Program Files (x86)/NTP/bin/ntpq"', warn=True)
-            if result.return_code != 0: 
+            c.run('which WinDump', pty=False)
+            c.run('which win-estats-logger', pty=False)
+            
+            # if we don't have proper ntp installed then
+            # start time service if not started and force resync
+            ret = c.run('ls "/cygdrive/c/Program Files (x86)/NTP/bin/ntpq"', warn=True)
+            if ret.return_code != 0: 
                 c.run('net start w32time', warn=True, pty=False)
                 c.run('w32tm /resync', warn=True, pty=False)
-
-            # Enable network interfaces if disabled
+                
             interfaces = get_netint_cached(c.host, int_no=-1)
             for interface in interfaces:
-                result = c.run(f'netsh int set int "Local Area Connection {interface}" enabled', warn=True, pty=False)
-                logger.info(result.stdout.strip())
+                c.run('netsh int set int "Local Area Connection %s" enabled' %
+                    interface, pty=False, warn=True)
+                
+        c.run('which killall', pty=False)
+        c.run('which pkill', pty=False)
+        c.run('which ps', pty=False)
+        c.run('which gzip', pty=False)
+        c.run('which dd', pty=False)
 
-        # Check various utilities
-        tools = ['killall', 'pkill', 'ps', 'gzip', 'dd', 'iperf', 'ping', 'httperf', 'lighttpd', 'nttcp']
-        for tool in tools:
-            result = c.run(f'which {tool}', warn=True, pty=False)
-            logger.info(f'{tool}: {result.stdout.strip()}')
+        # check for traffic sender/receiver tools
+        c.run('which iperf', pty=False)
+        c.run('which ping', pty=False)
+        c.run('which httperf', pty=False)
+        c.run('which lighttpd', pty=False)
+        c.run('which nttcp', pty=False)
+                
+    # c.put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin')
+    # c.run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
+    # c.run('which runbg_wrapper.sh', pty=False)
 
-    # Log completion
-    logger.info(f"Check completed for {c.host}")
+    # c.put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin')
+    # c.run('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
+    # c.run('which kill_iperf.sh', pty=False)
+
+    # c.put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin')
+    # c.run('chmod a+x /usr/bin/pktgen.sh', pty=False)
+    # c.run('which pktgen.sh', pty=False)
             
 
 
