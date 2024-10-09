@@ -447,7 +447,7 @@ def check_host_v2(c: Connection):
     cnn = Connection(host=c.host, connect_kwargs={"password": "password"})
     
     # get type of current host
-    htype = get_type_cached_v2(c=cnn)
+    htype = get_type_cached_v2(cnn)
     
     print("connection: ", cnn)
     print("htype: ", htype)    
@@ -463,16 +463,16 @@ def check_host_v2(c: Connection):
     else:
         print("host")
         if htype == 'FreeBSD':
-            c.run('which md5')
-            c.run('which tcpdump')
+            cnn.run('which md5')
+            cnn.run('which tcpdump')
         elif htype == 'Darwin':
-            c.run('which md5')
-            c.run('which tcpdump')
-            c.run('which dsiftr-osx-teacup.d')
+            cnn.run('which md5')
+            cnn.run('which tcpdump')
+            cnn.run('which dsiftr-osx-teacup.d')
         elif htype == 'Linux':
-            c.run('which ethtool')
-            c.run('which md5sum')
-            c.run('which tcpdump')
+            cnn.run('which ethtool')
+            cnn.run('which md5sum')
+            cnn.run('which tcpdump')
             #run('which web10g-listconns')
             #run('which web10g-readvars')
             #updated for ttprobe support
@@ -486,33 +486,33 @@ def check_host_v2(c: Connection):
             # if linux_tcp_logger == 'web10g' or linux_tcp_logger == 'both':
             #     run('which web10g-logger')
         elif htype == 'CYGWIN':
-            c.run('which WinDump', pty=False)
-            c.run('which win-estats-logger', pty=False)
+            cnn.run('which WinDump', pty=False)
+            cnn.run('which win-estats-logger', pty=False)
             
             # if we don't have proper ntp installed then
             # start time service if not started and force resync
-            ret = c.run('ls "/cygdrive/c/Program Files (x86)/NTP/bin/ntpq"', warn=True)
+            ret = cnn.run('ls "/cygdrive/cnn/Program Files (x86)/NTP/bin/ntpq"', warn=True)
             if ret.return_code != 0: 
-                c.run('net start w32time', warn=True, pty=False)
-                c.run('w32tm /resync', warn=True, pty=False)
+                cnn.run('net start w32time', warn=True, pty=False)
+                cnn.run('w32tm /resync', warn=True, pty=False)
                 
-            interfaces = get_netint_cached(c.host, int_no=-1)
+            interfaces = get_netint_cached(cnn.host, int_no=-1)
             for interface in interfaces:
-                c.run('netsh int set int "Local Area Connection %s" enabled' %
+                cnn.run('netsh int set int "Local Area Connection %s" enabled' %
                     interface, pty=False, warn=True)
                 
-        c.run('which killall', pty=False)
-        c.run('which pkill', pty=False)
-        c.run('which ps', pty=False)
-        c.run('which gzip', pty=False)
-        c.run('which dd', pty=False)
+        cnn.run('which killall', pty=False)
+        cnn.run('which pkill', pty=False)
+        cnn.run('which ps', pty=False)
+        cnn.run('which gzip', pty=False)
+        cnn.run('which dd', pty=False)
 
         # check for traffic sender/receiver tools
-        c.run('which iperf', pty=False)
-        c.run('which ping', pty=False)
-        c.run('which httperf', pty=False)
-        c.run('which lighttpd', pty=False)
-        c.run('which nttcp', pty=False)
+        cnn.run('which iperf', pty=False)
+        cnn.run('which ping', pty=False)
+        cnn.run('which httperf', pty=False)
+        cnn.run('which lighttpd', pty=False)
+        cnn.run('which nttcp', pty=False)
                 
     # c.put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin')
     # c.run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
