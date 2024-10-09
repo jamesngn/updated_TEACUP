@@ -61,7 +61,7 @@ def get_type_cached(host='', for_local='0'):
                     hosts=host).items()))  # Convert to list for concatenation
         return host_os.get(host, '')
 
-def get_type_cached_v2(c:Connection, for_local='0'):
+def get_type_cached_v2(c: Connection, for_local='0'):
     global host_os
     global ctrl_host_os
     
@@ -69,15 +69,14 @@ def get_type_cached_v2(c:Connection, for_local='0'):
 
     if for_local == '1':
         if ctrl_host_os == '':
-            ctrl_host_os = c.local('uname -s', capture=True)
+            ctrl_host_os = c.local('uname -s', hide=True).stdout.strip()  # Correct way to capture local output
         return ctrl_host_os
     else:
         if host not in host_os:
-            host_os = dict(
-                list(host_os.items()) +  # Convert to list for concatenation
-                list(get_type_v2(c).items()))  # Convert to list for concatenation
+            # Get the OS type from the remote host and store it in the dictionary
+            os_type = get_type_v2(c)
+            host_os[host] = os_type  # Store it in the host_os dictionary
         return host_os.get(host, '')
-
 
 ## Get host operating system type (TASK)
 #  @return Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
