@@ -726,7 +726,7 @@ def sanity_checks_v2(c):
     all_hosts = config.TPCONF_router + config.TPCONF_hosts
 
     for host in all_hosts:
-        print(f"Running sanity checks on {conn}")
+        print(f"Running sanity checks on {host}")
         
         # Use custom config to pass passwords
         custom_config = Config(overrides={
