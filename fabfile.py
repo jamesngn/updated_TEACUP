@@ -69,11 +69,11 @@ except AttributeError:
 # as batch, i.e. if they were all added together in one version, they
 # can be in the same try clause
 
-from experiment import run_experiment
 from hosttype import get_type
+from experiment import run_experiment
 from hostint import get_netint
 from hostmac import get_netmac
-from sanitychecks import check_host, check_connectivity, kill_old_processes, \
+from sanitychecks import check_host, check_host_v2, check_connectivity, kill_old_processes, \
     sanity_checks, get_host_info, check_config, check_time_sync
 from util import exec_cmd, authorize_key, copy_file
 from hostsetup import init_host, init_ecn, init_cc_algo, init_router, \
