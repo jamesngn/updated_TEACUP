@@ -739,7 +739,7 @@ def sanity_checks_v2(c):
     print("config: ", configV2)
 
 
-    # for conn in group:
-    #     print(f"Running sanity checks on {conn.host}")
-    #     check_host_v2(conn)
+    for conn in group:
+        print(f"Running sanity checks on {conn.host}")
+        check_host_v2(conn)
 
