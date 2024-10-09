@@ -102,7 +102,6 @@ def get_type_v2(c: Connection):
     
     # Extract the output from the result
     htype = result.stdout.strip()  # Remove any extra whitespace or newlines
-    print("htype:", htype)
 
     # Ignore Windows version bit of output
     if htype[0:6] == "CYGWIN":
