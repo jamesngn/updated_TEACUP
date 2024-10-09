@@ -728,12 +728,17 @@ def sanity_checks_v2(c):
     group = SerialGroup(*all_hosts)
     
     print("group: ", group)
-    # configV2 = Config.from_v1(env)
+    env.ssh_config_path = ""
     
-    # print("config: ", configV2)
+    configV2 = Config(overrides={
+    "connect_kwargs": {
+        "password": "password"
+    }
+})
+    
+    print("config: ", configV2)
 
 
-    print("env: ", env)    
     # for conn in group:
     #     print(f"Running sanity checks on {conn.host}")
     #     check_host_v2(conn)
