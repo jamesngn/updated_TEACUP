@@ -447,7 +447,7 @@ def check_host_v2(c: Connection):
     cnn = Connection(host=c.host, connect_kwargs={"password": "password"})
     
     # get type of current host
-    htype = get_type_cached(env.host_string)
+    htype = get_type_cached_v2(c=cnn)
     
     print("connection: ", cnn)
     print("htype: ", htype)    
