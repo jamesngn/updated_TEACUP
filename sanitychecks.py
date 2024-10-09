@@ -439,7 +439,7 @@ def check_host():
     # run('which pktgen.sh', pty=False)
 
 
-@fabric_v2_task(hosts=["host1", "host2", "controlhost"])
+@fabric_v2_task
 @parallel
 def check_host_v2(c: Connection):
     "Check that needed tools are installed on hosts"
@@ -453,13 +453,13 @@ def check_host_v2(c: Connection):
     
     
     
-    if c.host in config.TPCONF_router:
+    if cnn.host in config.TPCONF_router:
         print("router")
         if htype == 'FreeBSD':
-            c.run('which ipfw')
+            cnn.run('which ipfw')
         if htype == "Linux":
-            c.run('which tc')
-            c.run('which iptables')
+            cnn.run('which tc')
+            cnn.run('which iptables')
         # XXX check that kernel tick rate is high (>= 1000)
     else:
         print("host")
