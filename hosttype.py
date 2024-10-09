@@ -98,10 +98,11 @@ def get_type():
 def get_type_v2(c:Connection):
     "Get type/OS of host, e.g. Linux"
     
-    print("connection: " + str(c))
-
     with hide('debug', 'warnings'):
         htype = c.run('uname -s', pty=False)
+        
+        print("htype: ", htype)
+        
 
     # ignore Windows version bit of output
     if htype[0:6] == "CYGWIN":
