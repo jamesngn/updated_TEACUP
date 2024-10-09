@@ -439,7 +439,7 @@ def check_host():
     # run('which pktgen.sh', pty=False)
 
 
-@fabric_v2_task
+@fabric_v2_task(hosts=config.TPCONF_router + config.TPCONF_hosts)
 @parallel
 def check_host_v2(c: Connection):
     "Check that needed tools are installed on hosts"
