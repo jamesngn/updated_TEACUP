@@ -444,16 +444,10 @@ def check_host():
 def check_host_v2(c: Connection):
     "Check that needed tools are installed on hosts"
     
-    # c = Connection(host=c.host, connect_kwargs={"password": "password"})
-    
     # get type of current host
     htype = get_type_cached_v2(c)
     
-    print("connection: ", c)
-    print("htype: ", htype)    
-    
     if c.host in config.TPCONF_router:
-        print("router")
         if htype == 'FreeBSD':
             c.run('which ipfw')
         if htype == "Linux":
@@ -461,7 +455,6 @@ def check_host_v2(c: Connection):
             c.run('which iptables')
         # XXX check that kernel tick rate is high (>= 1000)
     else:
-        print("host")
         if htype == 'FreeBSD':
             c.run('which md5')
             c.run('which tcpdump')
