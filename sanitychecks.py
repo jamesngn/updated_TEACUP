@@ -449,7 +449,7 @@ def check_host_v2(c: Connection):
     # get type of current host
     htype = get_type_cached(env.host_string)
     
-    print("connection: ", c)
+    print("connection: ", cnn)
     
     
     
