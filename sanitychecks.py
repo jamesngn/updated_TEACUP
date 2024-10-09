@@ -494,8 +494,7 @@ def check_host_v2(c: Connection):
     "Check that needed tools are installed on hosts"
 
     # get type of current host
-    # htype = get_type_cached(c.host)
-    htype = "Linux"
+    htype = get_type_cached(c.host)
     
     if c.host in config.TPCONF_router:
         if htype == 'FreeBSD':
