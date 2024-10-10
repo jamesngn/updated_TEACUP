@@ -783,7 +783,7 @@ def sanity_checks_v2(c):
     """
     
 
-    print(f"Running sanity checks on {c.host}")
+    print(f"[{c.host}]: Running sanity checks")
     
     # Use custom config to pass passwords
     custom_config = Config(overrides={
