@@ -315,7 +315,7 @@ def _get_netmac_v2(c: Connection, host='') -> str:
         str: MAC address string.
     """
     
-    htype = get_type_cached_v2(c)  # Get the host type using the Fabric 2 connection
+    htype = get_type_cached_v2(socket.gethostname())  # Get the host type using the Fabric 2 connection
 
     # Resolve hostname to IP if necessary
     host_ip = socket.gethostbyname(host)
@@ -325,9 +325,9 @@ def _get_netmac_v2(c: Connection, host='') -> str:
 
     # Get MAC address from the ARP table depending on the OS type
     if htype == 'FreeBSD':
-        mac = c.local(f"arp {host_ip} | cut -d' ' -f 4 | head -1", hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
+        mac = c.local(f"arp {host_ip} | cut -d' ' -f 4 | head -1", echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
     elif htype == 'Linux':
-        mac = c.local(f"arp -a {host_ip} | cut -d' ' -f 4 | head -1", hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
+        mac = c.local(f"arp -a {host_ip} | cut -d' ' -f 4 | head -1",echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
     else:
         raise RuntimeError(f"Can't determine MAC address for OS {htype}")
 
