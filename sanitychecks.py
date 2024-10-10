@@ -917,3 +917,5 @@ def sanity_checks_v2(c):
         
         kill_old_processes_v2(conn)
         check_time_sync_v2(conn)
+    
+    print(f"[{c.host}]: Sanity checks completed")
