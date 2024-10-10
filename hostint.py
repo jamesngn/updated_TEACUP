@@ -430,7 +430,7 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
         
         int_name = ''
         field_idx = -1
-        lines = c.run('netstat -nr', , echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
+        lines = c.run('netstat -nr', echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
         for line in lines.split('\n'):
             if line:
                 fields = line.split()
