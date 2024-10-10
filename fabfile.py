@@ -337,6 +337,8 @@ def run_experiment_single_v2(c: Connection, test_id='', ecn='', duration='', del
         bsize (str, optional): Buffer size.
     """
     
+    global do_init_os
+    
     # Set test_id if not provided
     if test_id == '':
         test_id = config.TPCONF_test_id
@@ -346,17 +348,19 @@ def run_experiment_single_v2(c: Connection, test_id='', ecn='', duration='', del
     
     # Override parameters with provided arguments or defaults
     kwargs['ecn'] = ecn if ecn else kwargs.get('V_ecn', '0')
-    kwargs['V_duration'] = duration if duration else kwargs.get('V_duration', '')
-    kwargs['V_delay'] = delay if delay else kwargs.get('V_delay', '')
-    kwargs['V_loss'] = loss if loss else kwargs.get('V_loss', '')
-    kwargs['V_tcp_cc_algo'] = tcp_cc_algo if tcp_cc_algo else kwargs.get('V_tcp_cc_algo', 'default')
-    kwargs['V_down_rate'] = down_rate if down_rate else kwargs.get('V_down_rate', '')
-    kwargs['V_up_rate'] = up_rate if up_rate else kwargs.get('V_up_rate', '')
-    kwargs['V_aqm'] = aqm if aqm else kwargs.get('V_aqm', '')
-    kwargs['V_bsize'] = bsize if bsize else kwargs.get('V_bsize', '')
+    kwargs['duration'] = duration if duration else kwargs.get('V_duration', '')
+    kwargs['delay'] = delay if delay else kwargs.get('V_delay', '')
+    kwargs['loss'] = loss if loss else kwargs.get('V_loss', '')
+    kwargs['tcp_cc_algo'] = tcp_cc_algo if tcp_cc_algo else kwargs.get('V_tcp_cc_algo', 'default')
+    kwargs['down_rate'] = down_rate if down_rate else kwargs.get('V_down_rate', '')
+    kwargs['up_rate'] = up_rate if up_rate else kwargs.get('V_up_rate', '')
+    kwargs['aqm'] = aqm if aqm else kwargs.get('V_aqm', '')
+    kwargs['bsize'] = bsize if bsize else kwargs.get('V_bsize', '')
+    kwargs['do_init_os'] = do_init_os
+    kwargs['run'] = 0
 
     # Ensure that mandatory parameters like 'V_duration' are provided
-    if not kwargs['V_duration']:
+    if not kwargs['duration']:
         raise Exit('No duration specified in defaults or provided.')
 
     # Log the start of the experiment and run it

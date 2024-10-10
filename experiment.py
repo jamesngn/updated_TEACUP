@@ -419,8 +419,6 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     Raises:
         Exit: If no duration is specified for the experiment.
     """
-    print("kwargs: ", kwargs)
-    
     do_init_os = kwargs.get('do_init_os', '1')
     ecn = kwargs.get('ecn', '0')
     tcp_cc_algo = kwargs.get('tcp_cc_algo', 'default')
@@ -448,20 +446,21 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     # Optional TFTP boot directory
     tftpboot_dir = getattr(config, 'TPCONF_tftpboot_dir', '')
     
+    #TODO: check this tftpboot_dir and do_init_os
+    # if tftpboot_dir and do_init_os == '1':
     
-    if tftpboot_dir and do_init_os == '1':
-        # Use custom config to pass passwords
-        custom_config = config(overrides={
-            "connect_kwargs": {
-                "password": "password"
-            }
-        })
-        
-        all_hosts = config.TPCONF_router + config.TPCONF_hosts
-        group = SerialGroup(*all_hosts, config=custom_config)
-        
-        # Execute get_host_info_v2 on all hosts in the group
-        execute_on_group(group, get_host_info_v2, netint='0')
+    # Use custom config to pass passwords
+    custom_config = config(overrides={
+        "connect_kwargs": {
+            "password": "password"
+        }
+    })
+    
+    all_hosts = config.TPCONF_router + config.TPCONF_hosts
+    group = SerialGroup(*all_hosts, config=custom_config)
+    
+    # Execute get_host_info_v2 on all hosts in the group
+    execute_on_group(group, get_host_info_v2, netint='0')
         
                 
                 
