@@ -213,13 +213,13 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
                 "ifconfig | awk '/ether / { printf(\"%s \", $0); next } 1' | "
                 "grep ether | grep 'inet ' | "
                 "awk '{ printf(\"%s %s\\n\", $2, $4) }'",
-                hide=True).stdout
+                hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
         elif htype == 'Linux':
             macips = c.run(
                 "ifconfig | awk '/HWaddr / { printf(\"%s \", $0); next } 1' | "
                 "grep HWaddr | grep 'inet ' | "
                 "awk '{ printf(\"%s %s\\n\", $5, $7) }' | sed -e 's/addr://'",
-                hide=True).stdout
+                hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
         else:
             raise RuntimeError(f"Can't determine MAC address for OS {htype}")
 
