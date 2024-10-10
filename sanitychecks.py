@@ -448,8 +448,18 @@ def check_host():
 
 @fabric_v2_task
 @parallel
-def check_host_v2(c: Connection):
-    "Check that needed tools are installed on hosts"
+def check_host_v2(c: Connection) -> None:
+    """
+    Check that needed tools are installed on hosts (v2)
+
+    Args:
+        c (Connection): Fabric Connection object
+        
+    Returns:
+        None
+    """
+    
+    print(f"[{c.host}]: Running check_host_v2")
     
     # get type of current host
     htype = get_type_cached_v2(c)
@@ -609,7 +619,7 @@ def check_connectivity():
 def check_connectivity_v2(c: Connection):
     "Check connectivity between each pair of hosts with ping"
     
-    print(f"[{c.host}]: Checking connectivity...")
+    print(f"[{c.host}]: Running check_connectivity_v2")
     
     # get type of current host
     htype = get_type_cached_v2(c)
@@ -777,9 +787,15 @@ def kill_old_processes():
     
 @fabric_v2_task
 @parallel
-def kill_old_processes_v2(c: Connection):
+def kill_old_processes_v2(c: Connection) -> None:
     """
-    Kill old logging or traffic generation processes still running.
+    Kill any old processes (TASK)
+
+    Args:
+        c (Connection): Fabric Connection object
+    
+    Returns:
+        None
     """
 
     # Get type of the current host
@@ -852,7 +868,7 @@ def get_host_info(htype='1', netint='1', netmac='1'):
         get_netmac_cached(env.host_string)
         
 @fabric_v2_task
-def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1'):
+def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1') -> None:
     """
     Collect host info, prefill caches (must not be run in parallel!!!). Any parallel task cannot fill the caches cause the parallel execution is done with fork().
     Populate the host info caches.
@@ -862,7 +878,11 @@ def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1'):
         htype (str): '0' don't get host OS, '1' get host OS.
         netint (str): '0' don't get network interface names, '1' get network interface names.
         netmac (str): '0' don't get MAC addresses, '1' get MAC addresses.
+        
+    Returns:
+        None
     """
+    print(f"[{c.host}]: Running get_host_info_v2")
     
     if htype == '1':
         get_type_cached_v2(c)
@@ -917,7 +937,7 @@ def sanity_checks_v2(c):
     """
     
 
-    print(f"[{c.host}]: Running sanity checks")
+    print(f"[{c.host}]: Running sanity_checks_v2")
     
     # Use custom config to pass passwords
     custom_config = Config(overrides={

@@ -63,6 +63,7 @@ def mkdir_p_v2(path: str):
     Args:
         path (str): Directory to create
     """
+    print(f"mkdir_p_v2 with {path}")
     os.makedirs(path, exist_ok=True)
 
 ## Make sure the specified directory name ends with a trailing slash
