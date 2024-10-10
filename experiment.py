@@ -400,7 +400,7 @@ def run_experiment(test_id='', test_id_pfx='', *args, **kwargs):
 
 
 
-def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', *args, **kwargs):
+def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     """Run a network experiment with the specified parameters.
 
     Args:

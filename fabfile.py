@@ -224,6 +224,34 @@ def _fill_missing(*nargs, **kwargs):
 
     return nargs, kwargs
 
+def _fill_missing_v2( **kwargs):
+    """
+    Set all basic parameters that are not yet set to their default values.
+
+    Args:
+        kwargs (dict): Keyword arguments.
+
+    Returns:
+        tuple: Extended nargs and kwargs with missing values filled in.
+    """
+    
+    global do_init_os
+    
+    # Populate missing keyword arguments from the configuration defaults
+    for key, default_value in config.TPCONF_variable_defaults.items():
+        kwargs.setdefault(key, default_value)
+
+    # Compatibility: Map internal parameter names to the external ones
+    kwargs['ecn'] = kwargs.get('V_ecn', kwargs.get('ecn'))
+    kwargs['tcp_cc_algo'] = kwargs.get('V_tcp_cc_algo', kwargs.get('tcp_cc_algo'))
+    kwargs['duration'] = kwargs.get('V_duration', kwargs.get('duration'))
+
+    # Set special defaults if they are not already set
+    kwargs.setdefault('run', 0)
+    kwargs.setdefault('do_init_os', do_init_os)
+
+    return kwargs
+
 
 ## Check if experiment has been done before based on
 ## experiments_completed.txt file
@@ -286,8 +314,9 @@ def run_experiment_single(test_id='', *nargs, **kwargs):
     execute(run_experiment, test_id, test_id, *_nargs, **_kwargs)
     
 @fabric_v2_task
-def run_experiment_single_v2(c: Connection, test_id='', *nargs, **kwargs):
-    """Run a single experiment (TASK)
+def run_experiment_single_v2(c: Connection, test_id='', **kwargs):
+    """
+    Run a single experiment (TASK)
 
     Args:
         c (Connection: Fabric Connection object
@@ -299,10 +328,11 @@ def run_experiment_single_v2(c: Connection, test_id='', *nargs, **kwargs):
     if test_id == '':
         test_id = config.TPCONF_test_id
         
-    # TODO: config_check_and_log_v2(test_id)
-    _nargs, _kwargs = _fill_missing(*nargs, **kwargs)
-    
-    run_experiment_v2(test_id, test_id,*_nargs, **_kwargs)
+    # Fill missing values in nargs and kwargs
+    _kwargs = _fill_missing_v2(**kwargs)
+
+    # Log the start of the experiment and then run it
+    run_experiment_v2(test_id, test_id, **_kwargs)
     
     
 
