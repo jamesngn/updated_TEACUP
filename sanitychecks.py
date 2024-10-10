@@ -908,6 +908,12 @@ def sanity_checks():
 def sanity_checks_v2(c):
     """
     Perform all sanity checks, e.g., check for needed tools and connectivity
+    
+    Args:
+        c (Connection): Fabric connection object.
+        
+    Returns:
+        None
     """
     
 

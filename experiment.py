@@ -37,7 +37,7 @@ import glob, os
 
 from fabric.api import task as fabric_task, warn, put, puts, get, local, run, execute, \
     settings, abort, hosts, env, runs_once, parallel
-from fabric2 import Connection, task as fabric_task_v2
+
 from fabric.network import disconnect_all
 
 from invoke import run
@@ -67,6 +67,13 @@ from trafficgens import start_iperf, start_ping, \
     start_nttcp, start_bc_ping, \
     start_httperf_incast_n, start_fps_game, \
     start_dash_streaming_dashjs, start_nginx_server
+    
+# UPDATED:
+from fabric2 import Connection, task as fabric_task_v2, SerialGroup
+
+from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2,  sanity_checks_v2, get_host_info_v2
+
+from internalutil import execute_on_group
 
 
 ## Collect all the arguments
@@ -393,7 +400,7 @@ def run_experiment(test_id='', test_id_pfx='', *args, **kwargs):
 
 
 
-def run_experiment_v2(c: Connection, test_id: str = '', test_id_pfx: str = '', *args, **kwargs):
+def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', *args, **kwargs):
     """Run a network experiment with the specified parameters.
 
     Args:
@@ -438,3 +445,22 @@ def run_experiment_v2(c: Connection, test_id: str = '', test_id_pfx: str = '', *
     
     # Optional TFTP boot directory
     tftpboot_dir = getattr(config, 'TPCONF_tftpboot_dir', '')
+    
+    
+    if tftpboot_dir and do_init_os == '1':
+        # Use custom config to pass passwords
+        custom_config = config(overrides={
+            "connect_kwargs": {
+                "password": "password"
+            }
+        })
+        
+        all_hosts = config.TPCONF_router + config.TPCONF_hosts
+        group = SerialGroup(*all_hosts, config=custom_config)
+        
+        # Execute get_host_info_v2 on all hosts in the group
+        execute_on_group(group, get_host_info_v2, netint='0')
+        
+                
+                
+            

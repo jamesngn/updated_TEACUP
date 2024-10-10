@@ -73,3 +73,15 @@ def valid_dir(path):
 
     return path
 
+
+# Helper function 
+from fabric2 import Connection, SerialGroup
+
+# Define a helper function for executing tasks on a group of hosts
+def execute_on_group(group, task_func, *args, **kwargs):
+    """
+    Execute a task on a group of hosts and pass args/kwargs to the task.
+    """
+    for conn in group:
+        task_func(conn, *args, **kwargs)
+

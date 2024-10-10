@@ -70,14 +70,22 @@ except AttributeError:
 # can be in the same try clause
 
 from hosttype import get_type
-from experiment import run_experiment
+from experiment import run_experiment, run_experiment_v2
 from hostint import get_netint
 from hostmac import get_netmac
-from sanitychecks import check_host, check_host_v2, check_connectivity, check_connectivity_v2, kill_old_processes, kill_old_processes_v2, \
-    sanity_checks, sanity_checks_v2, get_host_info, check_config, check_time_sync, check_time_sync_v2
+from sanitychecks import check_host, check_connectivity,  kill_old_processes,  \
+    sanity_checks,  get_host_info, check_config, check_time_sync
 from util import exec_cmd, authorize_key, copy_file
 from hostsetup import init_host, init_ecn, init_cc_algo, init_router, \
         init_hosts, init_os, power_cycle, init_host_custom
+        
+        
+# fabric 2 task list:
+from hosttype import get_type_v2
+from hostint import get_netint_v2
+from hostmac import get_netmac_v2
+from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2, sanity_checks_v2, check_time_sync_v2, get_host_info_v2
+
 
 try:
     from hostsetup import init_topology
@@ -276,6 +284,26 @@ def run_experiment_single(test_id='', *nargs, **kwargs):
     
     _nargs, _kwargs = _fill_missing(*nargs, **kwargs)
     execute(run_experiment, test_id, test_id, *_nargs, **_kwargs)
+    
+@fabric_v2_task
+def run_experiment_single_v2(c: Connection, test_id='', *nargs, **kwargs):
+    """Run a single experiment (TASK)
+
+    Args:
+        c (Connection: Fabric Connection object
+        test_id (str, optional): TEST ID prefix . Defaults to ''.
+        nargs: Arguments (user-supplied parameters)
+        kwargs: Keyword arguments (user-supplied parameters)
+    """
+    
+    if test_id == '':
+        test_id = config.TPCONF_test_id
+        
+    # TODO: config_check_and_log_v2(test_id)
+    _nargs, _kwargs = _fill_missing(*nargs, **kwargs)
+    
+    run_experiment_v2(test_id, test_id,*_nargs, **_kwargs)
+    
     
 
 ## Generic function for varying a parameter
