@@ -243,12 +243,16 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
             ip = socket.gethostbyname(host_string)  # Try DNS resolution
         else:
             ip = host_string
+            
+        print(f"[{c.host}]: Resolved IP: {ip}")
 
         if ip != '127.0.0.1':
             mac = ip_mac_map.get(ip)
         else:
             # Guess it's the first NIC
             mac = list(ip_mac_map.values())[0] if ip_mac_map else None
+            
+        print(f"[{c.host}]: MAC address: {mac}")
 
     else:
         # Get MAC of non-router
