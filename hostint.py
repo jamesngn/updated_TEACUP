@@ -430,7 +430,7 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
         
         int_name = ''
         field_idx = -1
-        lines = c.run('netstat -nr', hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
+        lines = c.run('netstat -nr', , echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
         for line in lines.split('\n'):
             if line:
                 fields = line.split()
@@ -440,6 +440,8 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
                             field_idx = i 
                 if len(fields) > 0 and (fields[0].split('/')[0] == iip + '.0' or fields[0].split('/')[0] == iip):
                     int_name = fields[field_idx]
+                    
+        print(f'Interface: {int_name}')
 
         return int_name
     elif htype == 'CYGWIN':
