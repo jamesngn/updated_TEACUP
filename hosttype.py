@@ -100,7 +100,7 @@ def get_type_v2(c: Connection):
     print(f"[{c.host}]: Getting host type")
     
     # Run the command and get the Result object
-    result = c.run('uname -s', pty=False, hide=False)
+    result = c.run('uname -s', pty=False, echo=True)
     
     # Extract the output from the result
     htype = result.stdout.strip()  # Remove any extra whitespace or newlines
