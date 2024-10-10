@@ -430,7 +430,7 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
         
         int_name = ''
         field_idx = -1
-        lines = c.run('netstat -nr', hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
+        lines = c.run('netstat -nr', hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
         for line in lines.split('\n'):
             if line:
                 fields = line.split()
@@ -450,7 +450,7 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
         if windump == '0':
             
             # Get interface IPs and numbers
-            output = c.run('ipconfig | egrep "Local Area|IPv4" | grep -v "Tunnel"', hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
+            output = c.run('ipconfig | egrep "Local Area|IPv4" | grep -v "Tunnel"', hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
             
             lines = output.split("\n")
             for i in range(0, len(lines), 2):
@@ -466,10 +466,10 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
     
         else:
              # Get list of interface numbers and interface IDs
-            output = c.run('winDUmp -D | sed "s/\\([0-9]\\)\\.[^{]*{\\([^}]*\\).*/\\1 \\2/"', hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
+            output = c.run('winDUmp -D | sed "s/\\([0-9]\\)\\.[^{]*{\\([^}]*\\).*/\\1 \\2/"', hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
             
              # Get list of interface MACs and interface IDs
-            output2 = c.run('getmac | grep "^[0-9]" | sed "s/^\\([0-9A-Fa-f-]*\\)[^{]*{\\([^}]*\\).*/\\1 \\2/"', hide=True,echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
+            output2 = c.run('getmac | grep "^[0-9]" | sed "s/^\\([0-9A-Fa-f-]*\\)[^{]*{\\([^}]*\\).*/\\1 \\2/"', hide=True,echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
 
 
             # Get MAC of the internal/external interface

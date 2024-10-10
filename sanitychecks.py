@@ -803,45 +803,45 @@ def kill_old_processes_v2(c: Connection) -> None:
     
     # Perform actions based on the OS type
     if htype == 'FreeBSD':
-        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
     elif htype == 'Linux':
-        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-        c.run('rmmod ttprobe', warn=True, echo=True, echo_format=f"[{c.host}]: {{command}}")  # Remove module
+        c.run('rmmod ttprobe', warn=True, echo=True, echo_format=f"[{c.host}]: run {{command}}")  # Remove module
         
-        c.run('killall web10g-logger', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall web10g-logger', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
     elif htype == 'Darwin':
-        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-        c.run('killall dsiftr-osx-teacup.d', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall dsiftr-osx-teacup.d', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
     elif htype == 'CYGWIN':
-        c.run('killall WinDump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall WinDump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-        c.run('killall win-estats-logger', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall win-estats-logger', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-        c.run('killall -9 iperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall -9 iperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
     else:
-        c.run('killall iperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        c.run('killall iperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
 
-    c.run('killall ping', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('killall ping', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-    c.run('killall httperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('killall httperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-    c.run('killall lighttpd', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('killall lighttpd', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
 
     # Delete old lighttpd pid files
-    c.run('rm -f /var/run/*lighttpd.pid', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('rm -f /var/run/*lighttpd.pid', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-    c.run('killall runbg_wrapper.sh', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('killall runbg_wrapper.sh', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-    c.run('killall nttcp', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('killall nttcp', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-    c.run('killall pktgen.sh', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('killall pktgen.sh', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
         
-    c.run('killall python', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('killall python', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
 
     # Remove old log files in /tmp
-    c.run('rm -f /tmp/*.log', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+    c.run('rm -f /tmp/*.log', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
 
 
 
