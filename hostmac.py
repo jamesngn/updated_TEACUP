@@ -252,6 +252,7 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
         else:
             # Guess it's the first NIC
             mac = list(ip_mac_map.values())[0] if ip_mac_map else None
+            print(list(ip_mac_map.values()))
             
         print(f"[{c.host}]: MAC address: {mac}")
 
