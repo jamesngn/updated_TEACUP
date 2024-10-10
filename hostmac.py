@@ -61,34 +61,32 @@ def get_netmac_cached(host=''):
 
     return res
 
-def get_netmac_cached_v2(host='') -> str:
+def get_netmac_cached_v2(c:Connection) -> str:
     """
     Get network interface MAC address for the given host.
     
     Args:
-        host (str): Hostname or identifier used by Fabric 2.
+        c (Connection): Fabric 2 connection object for the host
     
     Returns:
         str: MAC address of the network interface in lower case.
     """
     global host_external_mac
 
-    if host not in host_external_mac:
+    if c.host not in host_external_mac:
         try:
             # Establish a connection to the host
-            c = Connection(host)
-
             # Execute the get_netmac task to fetch the MAC address
             mac = get_netmac_v2(c)
 
             # Store the MAC address in the global cache
-            host_external_mac[host] = mac
+            host_external_mac[c.host] = mac
 
         except UnexpectedExit as e:
-            print(f"Error retrieving MAC address for {host}: {e}")
+            print(f"Error retrieving MAC address for {c.host}: {e}")
             return ''
 
-    return host_external_mac.get(host, '')
+    return host_external_mac.get(c.host, '')
 
 
 ## Get MAC of host internal/external network interface (TASK)
