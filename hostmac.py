@@ -315,7 +315,7 @@ def _get_netmac_v2(c: Connection, host='') -> str:
         str: MAC address string.
     """
     
-    htype = get_type_cached_v2(socket.gethostname())  # Get the host type using the Fabric 2 connection
+    htype = get_type_cached_v2(c)  # Get the host type using the Fabric 2 connection
 
     # Resolve hostname to IP if necessary
     host_ip = socket.gethostbyname(host)
