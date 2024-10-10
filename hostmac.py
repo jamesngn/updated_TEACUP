@@ -188,7 +188,7 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
         str: MAC address string.
     """
 
-    host = c.host
+    host_string = c.host
 
     # if we have a port then strip off port
     if ':' in host_string:
