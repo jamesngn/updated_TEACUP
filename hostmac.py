@@ -215,6 +215,7 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
                 "awk '{ printf(\"%s %s\\n\", $2, $4) }'",
                 hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
         elif htype == 'Linux':
+            print(f"[{c.host}]: Getting MAC address for {host_string}")
             macips = c.run(
                 "ifconfig | awk '/HWaddr / { printf(\"%s \", $0); next } 1' | "
                 "grep HWaddr | grep 'inet ' | "
@@ -299,8 +300,6 @@ def _get_netmac_v2(c: Connection, host='') -> str:
     # Resolve hostname to IP if necessary
     host_ip = socket.gethostbyname(host)
     
-    print(f"[{c.host}]: Pinging {host_ip} to populate ARP table")
-
     # Populate ARP table by pinging the host
     c.run(f'ping -c 1 {host_ip}', hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}")
 
