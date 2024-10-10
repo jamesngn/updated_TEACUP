@@ -215,17 +215,16 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
                 "awk '{ printf(\"%s %s\\n\", $2, $4) }'",
                 hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
         elif htype == 'Linux':
-            macips = c.run(
-                "ifconfig | awk '/HWaddr / { printf(\"%s \", $0); next } 1' | "
-                "grep HWaddr | grep 'inet ' | "
-                "awk '{ printf(\"%s %s\\n\", $5, $7) }' | sed -e 's/addr://'",
-                pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout.strip()
+            # macips = c.run(
+            #     "ifconfig | awk '/HWaddr / { printf(\"%s \", $0); next } 1' | "
+            #     "grep HWaddr | grep 'inet ' | "
+            #     "awk '{ printf(\"%s %s\\n\", $5, $7) }' | sed -e 's/addr://'",
+            #     pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout.strip()
             
             macips = c.run(
                 "ifconfig eth0 | awk '/ether/ {mac=$2} /inet / && !/inet6/ {ip=$2} END {if (mac && ip) print mac, ip}' | sed -e 's/addr://'",
                 pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout.strip()
             
-            print(f"[{c.host}]: Got MAC and IP: {macips}")
             
             
         else:
@@ -236,6 +235,8 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
             if line:
                 a = line.split(' ')
                 ip_mac_map[a[1].strip()] = a[0].strip()
+                
+        print (f"[{c.host}]: IP-MAC map: {ip_mac_map}")
                 
         # Resolve hostname to IP if necessary
         if not re.match(r'[0-9.]+', host_string):
