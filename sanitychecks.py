@@ -879,7 +879,7 @@ def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1'):
 
 ## Run all sanity checks
 @fabric_task
-def sanity_checks():
+def sanity_checks(): 
     "Perform all sanity checks, e.g. check for needed tools and connectivity"
 
     execute(check_host, hosts=config.TPCONF_router + config.TPCONF_hosts)

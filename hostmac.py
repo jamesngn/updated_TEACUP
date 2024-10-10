@@ -79,7 +79,7 @@ def get_netmac_cached_v2(host='') -> str:
             c = Connection(host)
 
             # Execute the get_netmac task to fetch the MAC address
-            mac = get_netmac(c)
+            mac = get_netmac_v2(c)
 
             # Store the MAC address in the global cache
             host_external_mac[host] = mac
