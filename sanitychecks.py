@@ -677,6 +677,45 @@ def check_time_sync():
         abort(
             'Host %s time synchronisation error (difference > %s seconds)' %
             (env.host_string, str(allowed_time_diff)))
+        
+@fabric_v2_task
+def check_time_sync_v2(c: Connection):
+    """
+    Check time synchronization between control host and testbed host clocks.
+    """
+
+    # Set allowed time difference (default to 1 second)
+    allowed_time_diff = getattr(config, 'TPCONF_max_time_diff', 1)
+
+    # Get the type of the current host
+    htype = get_type_cached_v2(c)
+
+    # Get local time before running the remote command
+    t1 = datetime.datetime.now()
+
+    # Fetch remote timestamp in Unix time
+    if htype in ['FreeBSD', 'Linux', 'Darwin']:
+        rdate = c.run("date +'%s'", hide=True).stdout.strip()
+    elif htype == 'CYGWIN':
+        rdate = c.run("date +'%s'", hide=True, pty=False).stdout.strip()
+
+    # Get local time after running the remote command
+    t2 = datetime.datetime.now()
+
+    # Calculate the local timestamp in Unix time
+    ldate = c.local("date +'%s'", hide=True).stdout.strip()
+
+    # Calculate the processing delay between t1 and t2
+    dt_diff = t2 - t1
+    sec_diff = dt_diff.total_seconds()
+
+    # Display times and processing delay
+    print(f"Local time: {ldate}, Remote time: {rdate}, Proc delay: {sec_diff:.6f} seconds")
+
+    # Calculate time difference and check if it's within the allowed range
+    diff = abs(int(ldate) - int(rdate) - sec_diff)
+    if diff > allowed_time_diff:
+        raise RuntimeError(f"Host {c.host} time synchronization error (difference > {allowed_time_diff} seconds)")
 
 
 ## Kill any old processes (TASK)
@@ -724,6 +763,48 @@ def kill_old_processes():
 
     # remove old log stuff in /tmp
     run('rm -f /tmp/*.log', pty=False)
+    
+@fabric_v2_task
+@parallel
+def kill_old_processes_v2(c: Connection):
+    """
+    Kill old logging or traffic generation processes still running.
+    """
+
+    # Get type of the current host
+    htype = get_type_cached_v2(c)
+    
+    # Perform actions based on the OS type
+    if htype == 'FreeBSD':
+        c.run('killall tcpdump', warn=True, pty=False)
+    elif htype == 'Linux':
+        c.run('killall tcpdump', warn=True, pty=False)
+        c.run('rmmod ttprobe', warn=True)  # Remove module
+        c.run('killall web10g-logger', warn=True, pty=False)
+    elif htype == 'Darwin':
+        c.run('killall tcpdump', warn=True, pty=False)
+        c.run('killall dsiftr-osx-teacup.d', warn=True, pty=False)
+    elif htype == 'CYGWIN':
+        c.run('killall WinDump', warn=True, pty=False)
+        c.run('killall win-estats-logger', warn=True, pty=False)
+        c.run('killall -9 iperf', warn=True, pty=False)
+    else:
+        c.run('killall iperf', warn=True, pty=False)
+        
+    c.run('killall ping', warn=True, pty=False)
+    c.run('killall httperf', warn=True, pty=False)
+    c.run('killall lighttpd', warn=True, pty=False)
+
+    # Delete old lighttpd pid files
+    c.run('rm -f /var/run/*lighttpd.pid', warn=True, pty=False)
+    
+    c.run('killall runbg_wrapper.sh', warn=True, pty=False)
+    c.run('killall nttcp', warn=True, pty=False)
+    c.run('killall pktgen.sh', warn=True, pty=False)
+    c.run('killall python', warn=True, pty=False)
+
+    # Remove old log files in /tmp
+    c.run('rm -f /tmp/*.log', warn=True, pty=False)
 
 
 ## Collect host info, prefill caches (must not be run in parallel!!!)
@@ -792,8 +873,14 @@ def sanity_checks_v2(c):
         }
     })
     
+    do_check_conn = getattr(config, "TPCONF_check_connectivity", '1') == '1'
+    
     with Connection(c.host, config=custom_config) as conn:
         # Create a new connection with the custom config and run the sanity checks
         check_host_v2(conn)
-        # TODO: update the remaining tasks to use the new connection
-        check_connectivity_v2(conn)
+        
+        if do_check_conn:
+            check_connectivity_v2(conn)
+        
+        kill_old_processes_v2(conn)
+        check_time_sync_v2(conn)
