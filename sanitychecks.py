@@ -602,6 +602,8 @@ def check_connectivity():
 def check_connectivity_v2(c: Connection):
     "Check connectivity between each pair of hosts with ping"
     
+    print(f"[{c.host}]: Checking connectivity...")
+    
     # get type of current host
     htype = get_type_cached_v2(c)
     
@@ -683,6 +685,8 @@ def check_time_sync_v2(c: Connection):
     """
     Check time synchronization between control host and testbed host clocks.
     """
+    
+    print(f"[{c.host}]: Checking time synchronization...")
 
     # Set allowed time difference (default to 1 second)
     allowed_time_diff = getattr(config, 'TPCONF_max_time_diff', 1)
@@ -776,34 +780,63 @@ def kill_old_processes_v2(c: Connection):
     
     # Perform actions based on the OS type
     if htype == 'FreeBSD':
+        print(f"[{c.host}]: killall tcpdump")
         c.run('killall tcpdump', warn=True, pty=False)
     elif htype == 'Linux':
+        print(f"[{c.host}]: killall tcpdump")
         c.run('killall tcpdump', warn=True, pty=False)
+        
+        print(f"[{c.host}]: rmmod ttprobe")
         c.run('rmmod ttprobe', warn=True)  # Remove module
+        
+        print(f"[{c.host}]: killall web10g-logger")
         c.run('killall web10g-logger', warn=True, pty=False)
     elif htype == 'Darwin':
+        print(f"[{c.host}]: killall tcpdump")
         c.run('killall tcpdump', warn=True, pty=False)
+        
+        print(f"[{c.host}]: killall dsiftr-osx-teacup.d")
         c.run('killall dsiftr-osx-teacup.d', warn=True, pty=False)
     elif htype == 'CYGWIN':
+        print(f"[{c.host}]: killall WinDump")
         c.run('killall WinDump', warn=True, pty=False)
+        
+        print(f"[{c.host}]: killall win-estats-logger")
         c.run('killall win-estats-logger', warn=True, pty=False)
+        
+        print(f"[{c.host}]: killall -9 iperf")
         c.run('killall -9 iperf', warn=True, pty=False)
     else:
+        print(f"[{c.host}]: killall iperf")
         c.run('killall iperf', warn=True, pty=False)
-        
+    
+    print(f"[{c.host}]: killall ping")    
     c.run('killall ping', warn=True, pty=False)
+    
+    print(f"[{c.host}]: killall httperf")
     c.run('killall httperf', warn=True, pty=False)
+    
+    print(f"[{c.host}]: killall lighttpd")
     c.run('killall lighttpd', warn=True, pty=False)
 
     # Delete old lighttpd pid files
+    print(f"[{c.host}]: rm -f /var/run/*lighttpd.pid")
     c.run('rm -f /var/run/*lighttpd.pid', warn=True, pty=False)
     
+    print(f"[{c.host}]: killall runbg_wrapper.sh")
     c.run('killall runbg_wrapper.sh', warn=True, pty=False)
+    
+    print(f"[{c.host}]: killall nttcp")
     c.run('killall nttcp', warn=True, pty=False)
+    
+    print(f"[{c.host}]: killall pktgen.sh ; killall python")
     c.run('killall pktgen.sh', warn=True, pty=False)
+    
+    print(f"[{c.host}]: killall python")
     c.run('killall python', warn=True, pty=False)
 
     # Remove old log files in /tmp
+    print(f"[{c.host}]: rm -f /tmp/*.log")
     c.run('rm -f /tmp/*.log', warn=True, pty=False)
 
 
