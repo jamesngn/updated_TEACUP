@@ -221,7 +221,13 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
                 "awk '{ printf(\"%s %s\\n\", $5, $7) }' | sed -e 's/addr://'",
                 pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout.strip()
             
-            print(f"[{c.host}]: Got MAC addresses: {macips}")
+            macips = c.run(
+                "ifconfig eth0 | awk '/ether/ {mac=$2} /inet / && !/inet6/ {ip=$2} END {if (mac && ip) print mac, ip}' | sed -e 's/addr://'",
+                pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout.strip()
+            
+            print(f"[{c.host}]: Got MAC and IP: {macips}")
+            
+            
         else:
             raise RuntimeError(f"Can't determine MAC address for OS {htype}")
 
