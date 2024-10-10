@@ -873,7 +873,7 @@ def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1'):
         get_netint_windump_cached_v2(c, int_no=-1, internal_int='0')
         
     if netmac == '1':
-        get_netmac_cached_v2(c)
+        get_netmac_cached_v2(c.host)
 
 
 
