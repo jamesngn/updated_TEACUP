@@ -239,6 +239,7 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
         print (f"[{c.host}]: IP-MAC map: {ip_mac_map}")
                 
         # Resolve hostname to IP if necessary
+        print(f"[{c.host}]: Resolving IP for {host_string}")
         if not re.match(r'[0-9.]+', host_string):
             ip = socket.gethostbyname(host_string)  # Try DNS resolution
         else:
