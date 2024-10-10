@@ -219,7 +219,7 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
                 "ifconfig | awk '/HWaddr / { printf(\"%s \", $0); next } 1' | "
                 "grep HWaddr | grep 'inet ' | "
                 "awk '{ printf(\"%s %s\\n\", $5, $7) }' | sed -e 's/addr://'",
-                echo=True, echo_format=f"[{c.host}]: {{command}}").stdout.strip()
+                pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout.strip()
         else:
             raise RuntimeError(f"Can't determine MAC address for OS {htype}")
 
