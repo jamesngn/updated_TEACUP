@@ -220,6 +220,8 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
                 "grep HWaddr | grep 'inet ' | "
                 "awk '{ printf(\"%s %s\\n\", $5, $7) }' | sed -e 's/addr://'",
                 pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout.strip()
+            
+            print(f"[{c.host}]: Got MAC addresses: {macips}")
         else:
             raise RuntimeError(f"Can't determine MAC address for OS {htype}")
 
