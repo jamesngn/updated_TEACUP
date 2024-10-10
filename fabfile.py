@@ -73,8 +73,8 @@ from hosttype import get_type
 from experiment import run_experiment
 from hostint import get_netint
 from hostmac import get_netmac
-from sanitychecks import check_host, check_host_v2, check_connectivity, kill_old_processes, \
-    sanity_checks, sanity_checks_v2, get_host_info, check_config, check_time_sync
+from sanitychecks import check_host, check_host_v2, check_connectivity, check_connectivity_v2, kill_old_processes, kill_old_processes_v2, \
+    sanity_checks, sanity_checks_v2, get_host_info, check_config, check_time_sync, check_time_sync_v2
 from util import exec_cmd, authorize_key, copy_file
 from hostsetup import init_host, init_ecn, init_cc_algo, init_router, \
         init_hosts, init_os, power_cycle, init_host_custom
@@ -275,7 +275,7 @@ def run_experiment_single(test_id='', *nargs, **kwargs):
     config_check_and_log(test_id)
     
     _nargs, _kwargs = _fill_missing(*nargs, **kwargs)
-    execute(run_experiment, test_id, test_id, *_nargs, **_kwargs)
+    execute(f   , test_id, test_id, *_nargs, **_kwargs)
     
 
 ## Generic function for varying a parameter
