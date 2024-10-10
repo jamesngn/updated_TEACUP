@@ -538,6 +538,28 @@ def in_subnets(a, l):
     return False
 
 
+def in_subnets_v2(a: str, subnet_list: list) -> bool:
+    """
+    Return True if IP 'a' is in any of the /24 subnets in list 'subnet_list'.
+    
+    :param a: First IP (string)
+    :param subnet_list: List of /24 subnets (list of strings)
+    :return: True if 'a' is in any subnet in the list, False otherwise
+    """
+
+    # Split the first IP address into its components
+    a_arr = a.split('.')
+
+    # Iterate through the subnets and compare the first 3 octets
+    for b in subnet_list:
+        b_arr = b.split('.')
+        if a_arr[:3] == b_arr[:3]:  # Check if the first 3 octets are the same
+            return True
+
+    return False
+
+
+
 ## Check connectivity (and also prime switch's CAM table) (TASK)
 @fabric_task
 @parallel
@@ -574,6 +596,43 @@ def check_connectivity():
                     run('ping -n 2 %s' % ihost, pty=False)
                 else:
                     run('ping -c 2 %s' % ihost, pty=False)
+                    
+@fabric_v2_task
+@parallel
+def check_connectivity_v2(c: Connection):
+    "Check connectivity between each pair of hosts with ping"
+    
+    # get type of current host
+    htype = get_type_cached_v2(c)
+    
+    # get host test IP
+    test_ip = config.TPCONF_host_internal_ip[c.host][0]
+    
+    # get list of reachable /24 subnets
+    # reachable does not store /24 subnets, but the actual IPs, since we always
+    # ignore the last octet in comparisons anyway
+     # Get list of reachable /24 subnets
+    reachable = [test_ip]
+    for r in config.TPCONF_router:
+        for r_ip in config.TPCONF_host_internal_ip[r]:
+            if in_subnets_v2(r_ip, reachable):
+                # Add other subnets the router is connected to
+                for x_ip in config.TPCONF_host_internal_ip[r]:
+                    if x_ip != r_ip and x_ip not in reachable:
+                        reachable.append(x_ip)
+                break  # Continue with the next router
+
+    all_hosts = config.TPCONF_router + config.TPCONF_hosts
+    for host in all_hosts:
+        for ihost in config.TPCONF_host_internal_ip[host]:
+            if in_subnets_v2(ihost, reachable):
+                if htype == "CYGWIN":
+                    # CYGWIN uses -n for ping count
+                    c.run(f'ping -n 2 {ihost}', pty=False)
+                else:
+                    # Linux and others use -c for ping count
+                    c.run(f'ping -c 2 {ihost}', pty=False)
+    
 
 
 ## Check time synchronisation with control machine (should not run in parallel)
@@ -737,3 +796,4 @@ def sanity_checks_v2(c):
         # Create a new connection with the custom config and run the sanity checks
         check_host_v2(conn)
         # TODO: update the remaining tasks to use the new connection
+        check_connectivity_v2(conn)

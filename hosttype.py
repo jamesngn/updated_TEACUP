@@ -97,6 +97,8 @@ def get_type():
 def get_type_v2(c: Connection):
     "Get type/OS of host, e.g. Linux"
     
+    print(f"Getting host type for {c.host}")
+    
     # Run the command and get the Result object
     result = c.run('uname -s', pty=False)
     
