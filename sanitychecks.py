@@ -717,24 +717,23 @@ def sanity_checks():
     execute(check_time_sync, hosts=config.TPCONF_router + config.TPCONF_hosts)
     
     
-@fabric_v2_task
+@fabric_v2_task(hosts=config.TPCONF_router + config.TPCONF_hosts)
 def sanity_checks_v2(c):
     """
     Perform all sanity checks, e.g., check for needed tools and connectivity
     """
     
-    all_hosts = config.TPCONF_router + config.TPCONF_hosts
 
-    for host in all_hosts:
-        print(f"Running sanity checks on {host}")
-        
-        # Use custom config to pass passwords
-        custom_config = Config(overrides={
-            "connect_kwargs": {
-                "password": "password"
-            }
-        })
-        
-        with Connection(host, config=custom_config) as conn:
-            # Create a new connection with the custom config and run the sanity checks
-            check_host_v2(conn)
+    print(f"Running sanity checks on {c.host}")
+    
+    # Use custom config to pass passwords
+    custom_config = Config(overrides={
+        "connect_kwargs": {
+            "password": "password"
+        }
+    })
+    
+    with Connection(c.host, config=custom_config) as conn:
+        # Create a new connection with the custom config and run the sanity checks
+        check_host_v2(conn)
+        # TODO: update the remaining tasks to use the new connection
