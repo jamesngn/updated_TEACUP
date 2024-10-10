@@ -321,13 +321,13 @@ def _get_netmac_v2(c: Connection, host='') -> str:
     host_ip = socket.gethostbyname(host)
     
     # Populate ARP table by pinging the host
-    c.run(f'ping -c 1 {host_ip}', hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}")
+    c.local(f'ping -c 1 {host_ip}', echo=True, echo_format=f"[{c.host}]: run {{command}}")
 
     # Get MAC address from the ARP table depending on the OS type
     if htype == 'FreeBSD':
-        mac = c.run(f"arp {host_ip} | cut -d' ' -f 4 | head -1", hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
+        mac = c.local(f"arp {host_ip} | cut -d' ' -f 4 | head -1", hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
     elif htype == 'Linux':
-        mac = c.run(f"arp -a {host_ip} | cut -d' ' -f 4 | head -1", hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
+        mac = c.local(f"arp -a {host_ip} | cut -d' ' -f 4 | head -1", hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
     else:
         raise RuntimeError(f"Can't determine MAC address for OS {htype}")
 
