@@ -252,6 +252,9 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
 
         mac = _get_netmac_v2(c, host_string)
 
+
+    print(f"[{c.host}]: Returning MAC address: {mac.lower() if mac else None}")
+
     return mac.lower() if mac else None
 
 
