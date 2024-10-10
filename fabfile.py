@@ -275,7 +275,7 @@ def run_experiment_single(test_id='', *nargs, **kwargs):
     config_check_and_log(test_id)
     
     _nargs, _kwargs = _fill_missing(*nargs, **kwargs)
-    execute(f   , test_id, test_id, *_nargs, **_kwargs)
+    execute(run_experiment, test_id, test_id, *_nargs, **_kwargs)
     
 
 ## Generic function for varying a parameter

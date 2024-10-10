@@ -34,10 +34,9 @@ import os
 import re
 import datetime
 import config
-from fabric2 import Connection, SerialGroup, task as fabric_v2_task, Config
 from fabric.api import task as fabric_task, warn, local, run, execute, abort, hosts, \
     env, settings, parallel, serial, puts, put
-from hosttype import get_type_cached, get_type_cached_v2
+from hosttype import get_type_cached
 from hostint import get_netint_cached, get_netint_windump_cached
 from hostmac import get_netmac_cached
 
@@ -47,6 +46,14 @@ from trafficgens import start_iperf, start_ping, \
     create_http_incast_content, start_httperf_incast, \
     start_nttcp, start_httperf_incast_n, \
     start_fps_game, start_dash_streaming_dashjs, start_nginx_server
+    
+# UPDATED:
+from fabric2 import Connection, SerialGroup, task as fabric_v2_task, Config
+from fabric2.group import SerialGroup
+
+from hosttype import get_type_cached_v2
+from hostint import get_netint_cached_v2, get_netint_windump_cached_v2
+from hostmac import get_netmac_cached_v2
 
 
 def _args(*_nargs, **_kwargs):
@@ -780,64 +787,46 @@ def kill_old_processes_v2(c: Connection):
     
     # Perform actions based on the OS type
     if htype == 'FreeBSD':
-        print(f"[{c.host}]: killall tcpdump")
-        c.run('killall tcpdump', warn=True, pty=False)
+        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
     elif htype == 'Linux':
-        print(f"[{c.host}]: killall tcpdump")
-        c.run('killall tcpdump', warn=True, pty=False)
+        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
         
-        print(f"[{c.host}]: rmmod ttprobe")
-        c.run('rmmod ttprobe', warn=True)  # Remove module
+        c.run('rmmod ttprobe', warn=True, echo=True, echo_format=f"[{c.host}]: {{command}}")  # Remove module
         
-        print(f"[{c.host}]: killall web10g-logger")
-        c.run('killall web10g-logger', warn=True, pty=False)
+        c.run('killall web10g-logger', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
     elif htype == 'Darwin':
-        print(f"[{c.host}]: killall tcpdump")
-        c.run('killall tcpdump', warn=True, pty=False)
+        c.run('killall tcpdump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
         
-        print(f"[{c.host}]: killall dsiftr-osx-teacup.d")
-        c.run('killall dsiftr-osx-teacup.d', warn=True, pty=False)
+        c.run('killall dsiftr-osx-teacup.d', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
     elif htype == 'CYGWIN':
-        print(f"[{c.host}]: killall WinDump")
-        c.run('killall WinDump', warn=True, pty=False)
+        c.run('killall WinDump', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
         
-        print(f"[{c.host}]: killall win-estats-logger")
-        c.run('killall win-estats-logger', warn=True, pty=False)
+        c.run('killall win-estats-logger', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
         
-        print(f"[{c.host}]: killall -9 iperf")
-        c.run('killall -9 iperf', warn=True, pty=False)
+        c.run('killall -9 iperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
     else:
-        print(f"[{c.host}]: killall iperf")
-        c.run('killall iperf', warn=True, pty=False)
-    
-    print(f"[{c.host}]: killall ping")    
-    c.run('killall ping', warn=True, pty=False)
-    
-    print(f"[{c.host}]: killall httperf")
-    c.run('killall httperf', warn=True, pty=False)
-    
-    print(f"[{c.host}]: killall lighttpd")
-    c.run('killall lighttpd', warn=True, pty=False)
+        c.run('killall iperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+
+    c.run('killall ping', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        
+    c.run('killall httperf', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        
+    c.run('killall lighttpd', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
 
     # Delete old lighttpd pid files
-    print(f"[{c.host}]: rm -f /var/run/*lighttpd.pid")
-    c.run('rm -f /var/run/*lighttpd.pid', warn=True, pty=False)
-    
-    print(f"[{c.host}]: killall runbg_wrapper.sh")
-    c.run('killall runbg_wrapper.sh', warn=True, pty=False)
-    
-    print(f"[{c.host}]: killall nttcp")
-    c.run('killall nttcp', warn=True, pty=False)
-    
-    print(f"[{c.host}]: killall pktgen.sh ; killall python")
-    c.run('killall pktgen.sh', warn=True, pty=False)
-    
-    print(f"[{c.host}]: killall python")
-    c.run('killall python', warn=True, pty=False)
+    c.run('rm -f /var/run/*lighttpd.pid', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        
+    c.run('killall runbg_wrapper.sh', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        
+    c.run('killall nttcp', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        
+    c.run('killall pktgen.sh', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+        
+    c.run('killall python', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
 
     # Remove old log files in /tmp
-    print(f"[{c.host}]: rm -f /tmp/*.log")
-    c.run('rm -f /tmp/*.log', warn=True, pty=False)
+    c.run('rm -f /tmp/*.log', warn=True, pty=False, echo=True, echo_format=f"[{c.host}]: {{command}}")
+
 
 
 ## Collect host info, prefill caches (must not be run in parallel!!!)
@@ -861,6 +850,31 @@ def get_host_info(htype='1', netint='1', netmac='1'):
                                   internal_int='0')
     if netmac == '1':
         get_netmac_cached(env.host_string)
+        
+@fabric_v2_task
+def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1'):
+    """
+    Collect host info, prefill caches (must not be run in parallel!!!). Any parallel task cannot fill the caches cause the parallel execution is done with fork().
+    Populate the host info caches.
+
+    Args:
+        c (Connection): Fabric connection object.
+        htype (str): '0' don't get host OS, '1' get host OS.
+        netint (str): '0' don't get network interface names, '1' get network interface names.
+        netmac (str): '0' don't get MAC addresses, '1' get MAC addresses.
+    """
+    
+    if htype == '1':
+        get_type_cached_v2(c)
+    if netint == '1':
+        get_netint_cached_v2(c, int_no=-1)
+        get_netint_windump_cached_v2(c, int_no=-1)
+        get_netint_cached_v2(c, int_no=-1, internal_int='0')
+        get_netint_windump_cached_v2(c, int_no=-1, internal_int='0')
+        
+    if netmac == '1':
+        get_netmac_cached_v2(c)
+
 
 
 ## Run all sanity checks

@@ -61,7 +61,16 @@ def get_type_cached(host='', for_local='0'):
                     hosts=host).items()))  # Convert to list for concatenation
         return host_os.get(host, '')
 
-def get_type_cached_v2(c: Connection, for_local='0'):
+def get_type_cached_v2(c: Connection, for_local='0') -> str:
+    """Get host type and populate host_os, ctrl_host_os
+
+    Args:
+        c (Connection): Fabric Connection object
+        for_local (str, optional):  If '0' get type of remote host, if '1' get type of local host (where we execute script). Defaults to '0'.
+
+    Returns:
+        str: Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
+    """
     global host_os
     global ctrl_host_os
     

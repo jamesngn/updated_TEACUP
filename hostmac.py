@@ -32,8 +32,12 @@
 import re
 import socket
 import config
-from fabric.api import task, warn, local, run, execute, abort, hosts, env
-from hosttype import get_type_cached
+
+from fabric2 import Connection, task as fabric_task_v2
+from invoke import UnexpectedExit
+
+from fabric.api import task as fabric_task, warn, local, run, execute, abort, hosts, env
+from hosttype import get_type_cached, get_type_cached_v2
 
 
 ## Map external IPs or host names to MAC addresses (automatically populated)
@@ -57,6 +61,35 @@ def get_netmac_cached(host=''):
 
     return res
 
+def get_netmac_cached_v2(host='') -> str:
+    """
+    Get network interface MAC address for the given host.
+    
+    Args:
+        host (str): Hostname or identifier used by Fabric 2.
+    
+    Returns:
+        str: MAC address of the network interface in lower case.
+    """
+    global host_external_mac
+
+    if host not in host_external_mac:
+        try:
+            # Establish a connection to the host
+            c = Connection(host)
+
+            # Execute the get_netmac task to fetch the MAC address
+            mac = get_netmac(c)
+
+            # Store the MAC address in the global cache
+            host_external_mac[host] = mac
+
+        except UnexpectedExit as e:
+            print(f"Error retrieving MAC address for {host}: {e}")
+            return ''
+
+    return host_external_mac.get(host, '')
+
 
 ## Get MAC of host internal/external network interface (TASK)
 ## Limitation: if env.host_string is localhost (e.g. VM connected via NAT)
@@ -64,7 +97,7 @@ def get_netmac_cached(host=''):
 #  @param internal_int If '0' get MAC for internal interface (non-router only),
 #                     if '1' get MAC for external/control interface (non-router only)
 #  @return Interface MAC string in lower case, e.g. "d4:85:64:bf:5c:90"
-@task
+@fabric_task
 def get_netmac(internal_int='0'):
     "Get MAC address for external/ctrl network interface"
 
@@ -141,10 +174,86 @@ def get_netmac(internal_int='0'):
     return mac.lower()
 
 
+@fabric_task_v2
+def get_netmac_v2(c: Connection, internal_int='0') -> str:
+    """
+    Get MAC address of the host's internal or external network interface.
+
+    Args:
+        c (Connection): Fabric 2 connection object for the host.
+        internal_int (str): If '0', get the MAC address for the internal interface (non-router only).
+            If '1', get the MAC address for the external/control interface (non-router only).
+    
+    Returns:
+        str: MAC address string.
+    """
+
+    host = c.host
+
+    # if we have a port then strip off port
+    if ':' in host_string:
+        host_string = host_string.split(':')[0]
+        
+     # Set localhost if necessary
+    if host_string == 'localhost':
+        host_string = '127.0.0.1'
+        
+    if host_string in config.TPCONF_router or host_string == '127.0.0.1':
+        # Get the MAC address of the router
+
+        htype = get_type_cached_v2(c)
+        
+        # complicated awk code to get pairs of ip and mac addresses from
+        # ifconfig
+        if htype == 'FreeBSD':
+            macips = c.run(
+                "ifconfig | awk '/ether / { printf(\"%s \", $0); next } 1' | "
+                "grep ether | grep 'inet ' | "
+                "awk '{ printf(\"%s %s\\n\", $2, $4) }'",
+                hide=True).stdout
+        elif htype == 'Linux':
+            macips = c.run(
+                "ifconfig | awk '/HWaddr / { printf(\"%s \", $0); next } 1' | "
+                "grep HWaddr | grep 'inet ' | "
+                "awk '{ printf(\"%s %s\\n\", $5, $7) }' | sed -e 's/addr://'",
+                hide=True).stdout
+        else:
+            raise RuntimeError(f"Can't determine MAC address for OS {htype}")
+
+        ip_mac_map = {}
+        for line in macips.split('\n'):
+            if line:
+                a = line.split(' ')
+                ip_mac_map[a[1].strip()] = a[0].strip()
+                
+        # Resolve hostname to IP if necessary
+        if not re.match(r'[0-9.]+', host_string):
+            ip = socket.gethostbyname(host_string)  # Try DNS resolution
+        else:
+            ip = host_string
+
+        if ip != '127.0.0.1':
+            mac = ip_mac_map.get(ip)
+        else:
+            # Guess it's the first NIC
+            mac = list(ip_mac_map.values())[0] if ip_mac_map else None
+
+    else:
+        # Get MAC of non-router
+        if internal_int == '0':
+            host_string = c.host
+        else:
+            host_string = config.TPCONF_host_internal_ip.get(c.host, [None])[0]
+
+        mac = _get_netmac_v2(c, host_string)
+
+    return mac.lower() if mac else None
+
+
 ## Get MAC address of non-router by pinging host (and thereby populating the
 ## ARP table) and reading the MAC from the ARP table on the first router
 #  @param host Host to get MAC for
-@task
+@fabric_task
 def _get_netmac(host=''):
 
     htype = get_type_cached(env.host_string)
@@ -166,3 +275,34 @@ def _get_netmac(host=''):
     return mac
 
 
+@fabric_task_v2
+def _get_netmac_v2(c: Connection, host='') -> str:
+    """
+    Get MAC address of non-router by pinging the host (and thereby populating the ARP table)
+    and reading the MAC from the ARP table on the first router.
+
+    Args:
+        c (Connection): Fabric 2 connection object for the host.
+        host (str): Hostname or IP address to get the MAC address for.
+    
+    Returns:
+        str: MAC address string.
+    """
+    
+    htype = get_type_cached(c)  # Get the host type using the Fabric 2 connection
+
+    # Resolve hostname to IP if necessary
+    host_ip = socket.gethostbyname(host)
+
+    # Populate ARP table by pinging the host
+    c.run(f'ping -c 1 {host_ip}', hide=True)
+
+    # Get MAC address from the ARP table depending on the OS type
+    if htype == 'FreeBSD':
+        mac = c.run(f"arp {host_ip} | cut -d' ' -f 4 | head -1", hide=True).stdout.strip()
+    elif htype == 'Linux':
+        mac = c.run(f"arp -a {host_ip} | cut -d' ' -f 4 | head -1", hide=True).stdout.strip()
+    else:
+        raise RuntimeError(f"Can't determine MAC address for OS {htype}")
+
+    return mac

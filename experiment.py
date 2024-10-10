@@ -34,14 +34,19 @@ import datetime
 import re
 import socket
 import glob, os
-from fabric.api import task, warn, put, puts, get, local, run, execute, \
+
+from fabric.api import task as fabric_task, warn, put, puts, get, local, run, execute, \
     settings, abort, hosts, env, runs_once, parallel
+from fabric2 import Connection, task as fabric_task_v2
 from fabric.network import disconnect_all
+
+from invoke import run
+from invoke.exceptions import Exit
 
 from functools import cmp_to_key
 
 import config
-from internalutil import mkdir_p
+from internalutil import mkdir_p, mkdir_p_v2
 from bgproc import file_cleanup, print_proc_list
 from runbg import stop_processes
 from hosttype import get_type_cached, get_type, clear_type_cache
@@ -386,3 +391,50 @@ def run_experiment(test_id='', test_id_pfx='', *args, **kwargs):
     # done
     puts('\n[MAIN] COMPLETED experiment %s \n' % test_id)
 
+
+
+def run_experiment_v2(c: Connection, test_id: str = '', test_id_pfx: str = '', *args, **kwargs):
+    """Run a network experiment with the specified parameters.
+
+    Args:
+        c (Connection): The Fabric Connection object for remote command execution.
+        test_id (str): The experiment ID.
+        test_id_pfx (str): The experiment ID prefix (directory where experiment files will be saved).
+        *args: Additional positional arguments.
+        **kwargs: Additional keyword arguments.
+        
+    Keyword Args:
+        do_init_os (str): Whether to initialize the OS. Defaults to '1'.
+        ecn (str): Explicit Congestion Notification setting. Defaults to '0'.
+        tcp_cc_algo (str): TCP congestion control algorithm. Defaults to 'default'.
+        duration (str): Duration of the experiment (mandatory).
+
+    Raises:
+        Exit: If no duration is specified for the experiment.
+    """
+    
+    do_init_os = kwargs.get('do_init_os', '1')
+    ecn = kwargs.get('ecn', '0')
+    tcp_cc_algo = kwargs.get('tcp_cc_algo', 'default')
+    duration = kwargs.get('duration', '')
+    
+    if not duration:
+        raise Exit('No experiment duration specified')
+    
+    # Create subdirectory for test ID prefix
+    mkdir_p_v2(test_id_pfx)
+    
+    # remove <test_id>* files in <test_id_pfx> directory if exists
+    file_pattern = os.path.join(test_id_pfx, f"{test_id}_*")
+
+    for f in glob.glob(file_pattern):
+        os.remove(f)
+        
+     # Log experiment in the started list
+    run(f'echo "{test_id}" >> experiments_started.txt')
+
+    print(f'\n[MAIN] Starting experiment {test_id} \n')
+    
+    
+    # Optional TFTP boot directory
+    tftpboot_dir = getattr(config, 'TPCONF_tftpboot_dir', '')

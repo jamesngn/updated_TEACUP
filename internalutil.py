@@ -56,7 +56,14 @@ def mkdir_p(path):
             pass
         else:
             raise
+        
+def mkdir_p_v2(path: str):
+    """mkdir -p in python
 
+    Args:
+        path (str): Directory to create
+    """
+    os.makedirs(path, exist_ok=True)
 
 ## Make sure the specified directory name ends with a trailing slash
 #  @param path Directory
