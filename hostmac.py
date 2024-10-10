@@ -247,6 +247,8 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
             host_string = c.host
         else:
             host_string = config.TPCONF_host_internal_ip.get(c.host, [None])[0]
+            
+        print(f"[{c}]: Getting MAC address for {host_string} from router {config.TPCONF_router[0]}")
 
         mac = _get_netmac_v2(c, host_string)
 
