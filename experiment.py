@@ -460,6 +460,7 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     })
     
     all_hosts = config.TPCONF_router + config.TPCONF_hosts
+    print("All hosts: ", all_hosts)
     # group = SerialGroup(*all_hosts, config=custom_config)
     
     # # Execute get_host_info_v2 on all hosts in the group
