@@ -142,7 +142,7 @@ def get_netint_cached_v2(c: Connection, host: str = '', int_no: int = 0, interna
             host_internal_int[host] = []
             # Fetch the internal interfaces
             for i in range(len(config.TPCONF_host_internal_ip[host])):
-                result = c.run(f'get_netint {i} internal_int=1', hide=True)
+                result = get_netint_v2(c,int_no=i,internal_int='1')[c.host]
                 host_internal_int[host].append(result.stdout.strip())
 
         res = host_internal_int.get(host, [])
@@ -158,7 +158,7 @@ def get_netint_cached_v2(c: Connection, host: str = '', int_no: int = 0, interna
         if host not in host_external_int:
             host_external_int[host] = []
             # Fetch the external interfaces
-            result = c.run('get_netint 0 internal_int=0', hide=True)
+            result = get_netint_v2(c,int_no=0,internal_int='0')[c.host]
             host_external_int[host].append(result.stdout.strip())
 
         return host_external_int.get(host, [])
@@ -244,7 +244,7 @@ def get_netint_windump_cached_v2(c: Connection, host: str = '', int_no: int = 0,
             host_internal_windump_int[host] = []
             # Fetch the internal interfaces
             for i in range(len(config.TPCONF_host_internal_ip[host])):
-                result = c.run(f'get_netint {i} windump=1 internal_int=1', hide=True)
+                result = get_netint_v2(c,int_no=i, windump='1', internal_int='1')[c.host]
                 host_internal_windump_int[host].append(result.stdout.strip())
 
         res = host_internal_windump_int.get(host, [])
@@ -260,7 +260,7 @@ def get_netint_windump_cached_v2(c: Connection, host: str = '', int_no: int = 0,
         if htype == 'CYGWIN' and host not in host_external_windump_int:
             host_external_windump_int[host] = []
             # Fetch the external interfaces
-            result = c.run('get_netint 0 windump=1 internal_int=0', hide=True)
+            result = get_netint_v2(c,int_no=0, windump='1', internal_int='0')[c.host]
             host_external_windump_int[host].append(result.stdout.strip())
 
         return host_external_windump_int.get(host, [])
@@ -430,7 +430,7 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
         
         int_name = ''
         field_idx = -1
-        lines = c.run('netstat -nr', hide=True).stdout
+        lines = c.run('netstat -nr', hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
         for line in lines.split('\n'):
             if line:
                 fields = line.split()
@@ -450,7 +450,7 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
         if windump == '0':
             
             # Get interface IPs and numbers
-            output = c.run('ipconfig | egrep "Local Area|IPv4" | grep -v "Tunnel"', hide=True).stdout
+            output = c.run('ipconfig | egrep "Local Area|IPv4" | grep -v "Tunnel"', hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
             
             lines = output.split("\n")
             for i in range(0, len(lines), 2):
@@ -466,10 +466,10 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
     
         else:
              # Get list of interface numbers and interface IDs
-            output = c.run('winDUmp -D | sed "s/\\([0-9]\\)\\.[^{]*{\\([^}]*\\).*/\\1 \\2/"', hide=True).stdout
+            output = c.run('winDUmp -D | sed "s/\\([0-9]\\)\\.[^{]*{\\([^}]*\\).*/\\1 \\2/"', hide=True, echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
             
              # Get list of interface MACs and interface IDs
-            output2 = c.run('getmac | grep "^[0-9]" | sed "s/^\\([0-9A-Fa-f-]*\\)[^{]*{\\([^}]*\\).*/\\1 \\2/"', hide=True).stdout
+            output2 = c.run('getmac | grep "^[0-9]" | sed "s/^\\([0-9A-Fa-f-]*\\)[^{]*{\\([^}]*\\).*/\\1 \\2/"', hide=True,echo=True, echo_format=f"[{c.host}]: {{command}}").stdout
 
 
             # Get MAC of the internal/external interface

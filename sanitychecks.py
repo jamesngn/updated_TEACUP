@@ -884,16 +884,16 @@ def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1') -> None:
     """
     print(f"[{c.host}]: Running get_host_info_v2")
     
-    # if htype == '1':
-    #     get_type_cached_v2(c)
-    # if netint == '1':
-    #     get_netint_cached_v2(c, int_no=-1)
-    #     get_netint_windump_cached_v2(c, int_no=-1)
-    #     get_netint_cached_v2(c, int_no=-1, internal_int='0')
-    #     get_netint_windump_cached_v2(c, int_no=-1, internal_int='0')
+    if htype == '1':
+        get_type_cached_v2(c)
+    if netint == '1':
+        get_netint_cached_v2(c, int_no=-1)
+        get_netint_windump_cached_v2(c, int_no=-1)
+        get_netint_cached_v2(c, int_no=-1, internal_int='0')
+        get_netint_windump_cached_v2(c, int_no=-1, internal_int='0')
         
-    # if netmac == '1':
-    #     get_netmac_cached_v2(c)
+    if netmac == '1':
+        get_netmac_cached_v2(c)
 
 
 

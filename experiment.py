@@ -466,7 +466,6 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     # # Execute get_host_info_v2 on all hosts in the group
     # execute_on_group(group, get_host_info_v2, netint='0')
     for host in all_hosts:
-        print(f"Connecting to {host}")
         with Connection(host, config=custom_config) as c:
             get_host_info_v2(c, netint='0', )
                 
