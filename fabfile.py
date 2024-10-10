@@ -33,7 +33,7 @@ import os
 import importlib.util
 import datetime
 from fabric.api import execute, env, abort, local, task as fabric_task
-from fabric2 import Connection, task as fabric_v2_task
+
 
 # this will print paramiko errors on stderr
 import logging
@@ -81,10 +81,15 @@ from hostsetup import init_host, init_ecn, init_cc_algo, init_router, \
         
         
 # fabric 2 task list:
+from fabric2 import Connection, task as fabric_v2_task
+from invoke.exceptions import Exit
+
 from hosttype import get_type_v2
 from hostint import get_netint_v2
 from hostmac import get_netmac_v2
+
 from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2, sanity_checks_v2, check_time_sync_v2, get_host_info_v2
+
 
 
 try:
@@ -250,7 +255,7 @@ def _fill_missing_v2( **kwargs):
     kwargs.setdefault('run', 0)
     kwargs.setdefault('do_init_os', do_init_os)
 
-    return kwargs
+    return (), kwargs
 
 
 ## Check if experiment has been done before based on
@@ -314,25 +319,49 @@ def run_experiment_single(test_id='', *nargs, **kwargs):
     execute(run_experiment, test_id, test_id, *_nargs, **_kwargs)
     
 @fabric_v2_task
-def run_experiment_single_v2(c: Connection, test_id='', **kwargs):
+def run_experiment_single_v2(c: Connection, test_id='', ecn='', duration='', delay='', loss='', tcp_cc_algo='', down_rate='', up_rate='', aqm='', bsize=''):
     """
     Run a single experiment (TASK)
 
     Args:
-        c (Connection: Fabric Connection object
-        test_id (str, optional): TEST ID prefix . Defaults to ''.
-        nargs: Arguments (user-supplied parameters)
-        kwargs: Keyword arguments (user-supplied parameters)
+        c (Connection): Fabric Connection object
+        test_id (str, optional): TEST ID prefix. Defaults to ''.
+        ecn (str, optional): Explicit Congestion Notification setting.
+        duration (str, optional): Experiment duration.
+        delay (str, optional): Network delay.
+        loss (str, optional): Packet loss rate.
+        tcp_cc_algo (str, optional): TCP Congestion Control algorithm.
+        down_rate (str, optional): Download rate.
+        up_rate (str, optional): Upload rate.
+        aqm (str, optional): AQM algorithm.
+        bsize (str, optional): Buffer size.
     """
     
+    # Set test_id if not provided
     if test_id == '':
         test_id = config.TPCONF_test_id
-        
-    # Fill missing values in nargs and kwargs
-    _kwargs = _fill_missing_v2(**kwargs)
+    
+    # Initialize kwargs with default values from TPCONF_variable_defaults
+    kwargs = {key: default_value for key, default_value in config.TPCONF_variable_defaults.items()}
+    
+    # Override parameters with provided arguments or defaults
+    kwargs['ecn'] = ecn if ecn else kwargs.get('V_ecn', '0')
+    kwargs['V_duration'] = duration if duration else kwargs.get('V_duration', '')
+    kwargs['V_delay'] = delay if delay else kwargs.get('V_delay', '')
+    kwargs['V_loss'] = loss if loss else kwargs.get('V_loss', '')
+    kwargs['V_tcp_cc_algo'] = tcp_cc_algo if tcp_cc_algo else kwargs.get('V_tcp_cc_algo', 'default')
+    kwargs['V_down_rate'] = down_rate if down_rate else kwargs.get('V_down_rate', '')
+    kwargs['V_up_rate'] = up_rate if up_rate else kwargs.get('V_up_rate', '')
+    kwargs['V_aqm'] = aqm if aqm else kwargs.get('V_aqm', '')
+    kwargs['V_bsize'] = bsize if bsize else kwargs.get('V_bsize', '')
 
-    # Log the start of the experiment and then run it
-    run_experiment_v2(test_id, test_id, **_kwargs)
+    # Ensure that mandatory parameters like 'V_duration' are provided
+    if not kwargs['V_duration']:
+        raise Exit('No duration specified in defaults or provided.')
+
+    # Log the start of the experiment and run it
+    run_experiment_v2(test_id, test_id, **kwargs)
+
     
     
 

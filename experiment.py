@@ -419,11 +419,13 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     Raises:
         Exit: If no duration is specified for the experiment.
     """
+    print("kwargs: ", kwargs)
     
     do_init_os = kwargs.get('do_init_os', '1')
     ecn = kwargs.get('ecn', '0')
     tcp_cc_algo = kwargs.get('tcp_cc_algo', 'default')
     duration = kwargs.get('duration', '')
+    
     
     if not duration:
         raise Exit('No experiment duration specified')
