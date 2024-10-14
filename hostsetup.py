@@ -45,8 +45,8 @@ from hostmac import get_netmac_cached
 
 #UPDATED:
 from fabric2 import Connection, task as fabric_v2_task 
-from hosttype import get_type_cached_v2
 from invoke.exceptions import UnexpectedExit
+from hosttype import get_type_cached_v2, get_type_v2
 from hostmac import get_netmac_cached_v2
 
 ## Get interface speed for host, if defined
@@ -908,18 +908,18 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
         print(f"[{c.host}]: Switching from OS {htype} {kern} to OS {target_os} {target_kern}")
 
         if htype != 'Darwin':  # No PXE booting for Macs
-            local(f"cat {pxe_template} | sed -e 's/@CONFIG@/{config_str}/' | sed -e 's/@TFTPSERVER@/{tftp_server}/' > {file_name}")
+            c.local(f"cat {pxe_template} | sed -e 's/@CONFIG@/{config_str}/' | sed -e 's/@TFTPSERVER@/{tftp_server}/' > {file_name}")
 
             # Make backup of current file if not exists yet
             full_file_name = os.path.join(config.TPCONF_tftpboot_dir, file_name)
             full_file_name_backup = f"{full_file_name}.bak"
-            local(f"mv -f {full_file_name} {full_file_name_backup} || true")
-            local(f"cp {file_name} {config.TPCONF_tftpboot_dir}")
-            local(f"chmod a+rw {full_file_name}")
+            c.local(f"mv -f {full_file_name} {full_file_name_backup} || true")
+            c.local(f"cp {file_name} {config.TPCONF_tftpboot_dir}")
+            c.local(f"chmod a+rw {full_file_name}")
 
             if file_prefix:
                 file_name2 = os.path.join(local_dir, f"{file_prefix}_{file_name}")
-                local(f"mv {file_name} {file_name2}")
+                c.local(f"mv {file_name} {file_name2}")
 
         # Reboot the machine
         if htype == 'Linux' or htype == 'FreeBSD':
@@ -943,7 +943,7 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
                 time.sleep(10)
         
         # Final check if OS is correct
-        htype = get_type(c)
+        htype = get_type_v2(c)
         kern = c.run('uname -r').stdout.strip() if target_os == 'Linux' else ''
         if htype == target_os and kern == target_kern:
             print(f"[{c.host}]: Host running OS {target_os} {target_kern}")
