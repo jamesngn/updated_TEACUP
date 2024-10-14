@@ -578,6 +578,9 @@ def init_os(file_prefix='', os_list='', force_reboot='0', do_power_cycle='0',
             tftp_server='10.1.1.11:8080',
             mac_list=''):
     "Boot host with selected operating system"
+    
+    print("env all hosts: ", env.all_hosts)
+    print("env host string: ", env.host_string)
 
     _boot_timeout = int(boot_timeout)
 
