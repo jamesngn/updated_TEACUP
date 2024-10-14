@@ -85,6 +85,8 @@ TPCONF_remote_dir = '/tmp/'
 
 TPCONF_force_reboot = '0'
 
+TPCONF_tftpboot_dir = '/tftpboot'
+
 TPCONF_boot_timeout = 100
 
 TPCONF_os_partition = {
