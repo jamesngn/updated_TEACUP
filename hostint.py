@@ -143,6 +143,8 @@ def get_netint_cached_v2(c: Connection, host='', int_no: int = 0, internal_int: 
             # Fetch the internal interfaces
             for i in range(len(config.TPCONF_host_internal_ip[host])):
                 conn = config.host_to_conn[host]
+                
+                print (f"[{c.host}]: Fetching internal interface {i} - " + get_netint_v2(conn,int_no=i,internal_int='1'))
                 result = get_netint_v2(conn,int_no=i,internal_int='1')[host]
                 host_internal_int[host].append(result.stdout.strip())
 
