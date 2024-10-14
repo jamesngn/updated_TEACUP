@@ -454,24 +454,12 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     #TODO: check this tftpboot_dir and do_init_os
     # if tftpboot_dir and do_init_os == '1':
     
-    # Use custom config to pass passwords
-    custom_config = Config(overrides={
-        "connect_kwargs": {
-            "password": "password"
-        }
-    })
-    
-    all_hosts = config.TPCONF_router + config.TPCONF_hosts
-    print("All hosts: ", all_hosts)
-    # group = SerialGroup(*all_hosts, config=custom_config)
-    
-    # # Execute get_host_info_v2 on all hosts in the group
-    # execute_on_group(group, get_host_info_v2, netint='0')
+
     #TODO: add if tftpboot_dir != '' and do_init_os == '1':
-    for host in all_hosts:
-        print(f"Connecting to {host}")
-        with Connection(host, config=custom_config) as c:
-            get_host_info_v2(c, netint='0', )
+    if tftpboot_dir != '' and do_init_os == '1':
+        for host in config.all_hosts:
+            get_host_info_v2(config.hosts_connection_object[host], netint='0')
+    
                 
                 
             
