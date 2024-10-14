@@ -456,10 +456,11 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     
 
     #TODO: add if tftpboot_dir != '' and do_init_os == '1':
-    for host in config.all_hosts:
-        conn : Connection = config.hosts_connection_object[host]
-        get_host_info_v2(conn, netint='0')
-        init_os_hosts_v2(conn,file_prefix=test_id_pfx, local_dir=test_id_pfx, )
+    if tftpboot_dir != '' and do_init_os == '1':
+        for host in config.all_hosts:
+            conn : Connection = config.hosts_connection_object[host]
+            get_host_info_v2(conn, netint='0')
+            init_os_hosts_v2(conn,file_prefix=test_id_pfx, local_dir=test_id_pfx, )
 
     clear_type_cache()  # clear host type cache
     disconnect_all()  # close all connections
