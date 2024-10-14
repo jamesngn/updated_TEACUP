@@ -1492,50 +1492,50 @@ def init_host_v2(c: Connection):
             c.sudo(f'ethtool -K {interface} ufo off')
             
         # send and recv buffer max (set max to 2MB)
-        c.run('sysctl net.core.rmem_max=2097152')
-        c.run('sysctl net.core.wmem_max=2097152')
+        c.sudo('sysctl net.core.rmem_max=2097152')
+        c.sudo('sysctl net.core.wmem_max=2097152')
         # tcp recv buffer max (min 4kB, default 87kB, max 6MB; this is standard
         # on kernel 3.7)
-        c.run("sysctl net.ipv4.tcp_rmem='4096 87380 6291456'")
+        c.sudo("sysctl net.ipv4.tcp_rmem='4096 87380 6291456'")
         # tcp send buffer max (min 4kB, default 64kB, max 4MB; 4x the default
         # otherwise standard values from kernel 3.7)
-        c.run("sysctl net.ipv4.tcp_wmem='4096 65535 4194304'")
+        c.sudo("sysctl net.ipv4.tcp_wmem='4096 65535 4194304'")
     elif htype == 'Darwin':
         # disable tso
-        c.run('sysctl -w net.inet.tcp.tso=0')
+        c.sudo('sysctl -w net.inet.tcp.tso=0')
         # diable lro (off by default anyway)
-        c.run('sysctl -w net.inet.tcp.lro=0')
+        c.sudo('sysctl -w net.inet.tcp.lro=0')
         
         # disable auto tuning of buffers
-        c.run('sysctl -w net.inet.tcp.doautorcvbuf=0')
-        c.run('sysctl -w net.inet.tcp.doautosndbuf=0')
+        c.sudo('sysctl -w net.inet.tcp.doautorcvbuf=0')
+        c.sudo('sysctl -w net.inet.tcp.doautosndbuf=0')
         
         # send and receive buffer max (2MB). kern.ipc.maxsockbuf max be the sum
         # (but is 4MB by default anyway)
-        c.run('sysctl -w kern.ipc.maxsockbuf=4194304')
-        c.run('sysctl -w net.inet.tcp.sendspace=2097152')
-        c.run('sysctl -w net.inet.tcp.recvspace=2097152')
+        c.sudo('sysctl -w kern.ipc.maxsockbuf=4194304')
+        c.sudo('sysctl -w net.inet.tcp.sendspace=2097152')
+        c.sudo('sysctl -w net.inet.tcp.recvspace=2097152')
         
         # set the auto receive/send buffer max to 2MB as well just in case
-        c.run('sysctl -w net.inet.tcp.autorcvbufmax=2097152')
-        c.run('sysctl -w net.inet.tcp.autosndbufmax=2097152')
+        c.sudo('sysctl -w net.inet.tcp.autorcvbufmax=2097152')
+        c.sudo('sysctl -w net.inet.tcp.autosndbufmax=2097152')
     elif htype == 'CYGWIN':
         # disable ip/tcp/udp offload processing
-        c.run('netsh int tcp set global chimney=disabled', pty=False)
-        c.run('netsh int ip set global taskoffload=disabled', pty=False)
+        c.sudo('netsh int tcp set global chimney=disabled', pty=False)
+        c.sudo('netsh int ip set global taskoffload=disabled', pty=False)
         # enable tcp timestamps
-        c.run('netsh int tcp set global timestamps=enabled', pty=False)
+        c.sudo('netsh int tcp set global timestamps=enabled', pty=False)
         # disable tcp window scaling heuristics, enforce user-set auto-tuning
         # level
-        c.run('netsh int tcp set heuristics disabled', pty=False)
+        c.sudo('netsh int tcp set heuristics disabled', pty=False)
 
         interfaces = get_netint_cached_v2(c, int_no=-1)
 
         for interface in interfaces:
             # stop and restart interface to make the changes
-            c.run('netsh int set int "Local Area Connection %s" disabled' %
+            c.sudo('netsh int set int "Local Area Connection %s" disabled' %
                 interface, pty=False)
-            c.run('netsh int set int "Local Area Connection %s" enabled' %
+            c.sudo('netsh int set int "Local Area Connection %s" enabled' %
                 interface, pty=False)
 
         # XXX send and recv buffer max (don't know how to set this)
@@ -1573,7 +1573,7 @@ def init_ecn(ecn='0'):
         abort("Can't enable/disable ECN for OS '%s'" % htype)
 
 @fabric_v2_task
-def init_ecn_v2(c, ecn='0'):
+def init_ecn_v2(c: Connection, ecn='0'):
     """
     Initialize whether ECN (Explicit Congestion Notification) is used or not.
     
@@ -1594,17 +1594,17 @@ def init_ecn_v2(c, ecn='0'):
 
     # Enable/disable ECN depending on the OS
     if htype == 'FreeBSD':
-        c.run(f'sysctl net.inet.tcp.ecn.enable={ecn}')
+        c.sudo(f'sysctl net.inet.tcp.ecn.enable={ecn}')
     elif htype == 'Linux':
-        c.run(f'sysctl net.ipv4.tcp_ecn={ecn}')
+        c.sudo(f'sysctl net.ipv4.tcp_ecn={ecn}')
     elif htype == 'Darwin':
-        c.run(f'sysctl -w net.inet.tcp.ecn_initiate_out={ecn}')
-        c.run(f'sysctl -w net.inet.tcp.ecn_negotiate_in={ecn}')
+        c.sudo(f'sysctl -w net.inet.tcp.ecn_initiate_out={ecn}')
+        c.sudo(f'sysctl -w net.inet.tcp.ecn_negotiate_in={ecn}')
     elif htype == 'CYGWIN':
         if ecn == '1':
-            c.run('netsh int tcp set global ecncapability=enabled', pty=False)
+            c.sudo('netsh int tcp set global ecncapability=enabled', pty=False)
         else:
-            c.run('netsh int tcp set global ecncapability=disabled', pty=False)
+            c.sudo('netsh int tcp set global ecncapability=disabled', pty=False)
     else:
         raise ValueError(f"Can't enable/disable ECN for OS '{htype}'")
 
@@ -1848,7 +1848,7 @@ def init_cc_algo_v2(c: Connection, algo='default', *args, **kwargs):
         raise ValueError(f'Invalid TCP algorithm. Available algorithms: {", ".join(valid_algos)}')
 
     # Get the type of the current host
-    htype = get_type_cached(c)
+    htype = get_type_cached_v2(c)
 
     # FreeBSD-specific handling
     if htype == 'FreeBSD':
