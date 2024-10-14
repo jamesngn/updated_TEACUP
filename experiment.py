@@ -190,7 +190,9 @@ def run_experiment(test_id='', test_id_pfx='', *args, **kwargs):
         execute(
             init_os_hosts,
             file_prefix=test_id_pfx,
-            local_dir=test_id_pfx)  # reboot
+            local_dir=test_id_pfx,
+            hosts=config.TPCONF_router +
+            config.TPCONF_hosts)  # reboot
         clear_type_cache()  # clear host type cache
         disconnect_all()  # close all connections
         time.sleep(30)  # give hosts some time to settle down (after reboot)
