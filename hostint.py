@@ -133,12 +133,10 @@ def get_netint_cached_v2(c: Connection, int_no: int = 0, internal_int: str = '1'
         List[str]: Interface name(s), e.g., "em0".
     """
     
-    print(f"[{c.host}]: Running get_netint_cached_v2")
+    print(f"[{c.host}]: Executing get_netint_cached_v2")
     
     global host_internal_int, host_external_int
     
-    print(f"[{c.host}]: host_internal_int: {host_internal_int}")
-
     if internal_int == '1':
         if c.host not in host_internal_int:
             host_internal_int.update({c.host: []})
@@ -234,7 +232,7 @@ def get_netint_windump_cached_v2(c: Connection, host: str = '', int_no: int = 0,
         List[str]: Interface name(s), e.g., "1".
     """
     
-    print(f"[{c.host}]: Running get_netint_windump_cached_v2")
+    print(f"[{c.host}]: Executing get_netint_windump_cached_v2")
     
     global host_internal_windump_int, host_external_windump_int
 
@@ -405,7 +403,7 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
         str: Interface name string, e.g. "em0".
     """
     
-    print(f"[{c.host}]: Running get_netint_v2")
+    print(f"[{c.host}]: Executing get_netint_v2")
     
     # Need to convert if we run task from command line
     int_no = int(int_no)

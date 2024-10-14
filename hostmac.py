@@ -72,7 +72,7 @@ def get_netmac_cached_v2(c:Connection) -> str:
         str: MAC address of the network interface in lower case.
     """
     
-    print(f"[{c.host}] Running get_netmac_cached_v2")
+    print(f"[{c.host}] Executing get_netmac_cached_v2")
     
     global host_external_mac
 
@@ -189,7 +189,7 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
         str: MAC address string.
     """
     
-    print(f"[{c.host}] Running get_netmac_v2 for internal_int={internal_int}")
+    print(f"[{c.host}] Executing get_netmac_v2 for internal_int={internal_int}")
 
     host_string = c.host
 

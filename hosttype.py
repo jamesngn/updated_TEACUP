@@ -72,7 +72,7 @@ def get_type_cached_v2(c: Connection, for_local='0') -> str:
         str: Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
     """
     
-    print(f"[{c.host}]: Running get_type_cached_v2")
+    print(f"[{c.host}]: Executing get_type_cached_v2")
     
     global host_os
     global ctrl_host_os
@@ -117,7 +117,7 @@ def get_type_v2(c: Connection) -> str:
         str: Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
     """
     
-    print(f"[{c.host}]: Running get_type_v2")
+    print(f"[{c.host}]: Executing get_type_v2")
     
     # Run the command and get the Result object
     result = c.run('uname -s', pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
@@ -134,8 +134,6 @@ def get_type_v2(c: Connection) -> str:
 
 ## Clear host type cache
 def clear_type_cache():
-    print("Running clear_type_cache")
-    
     global host_os
 
     host_os.clear()

@@ -459,7 +459,7 @@ def check_host_v2(c: Connection) -> None:
         None
     """
     
-    print(f"[{c.host}]: Running check_host_v2")
+    print(f"[{c.host}]: Executing check_host_v2")
     
     # get type of current host
     htype = get_type_cached_v2(c)
@@ -619,7 +619,7 @@ def check_connectivity():
 def check_connectivity_v2(c: Connection):
     "Check connectivity between each pair of hosts with ping"
     
-    print(f"[{c.host}]: Running check_connectivity_v2")
+    print(f"[{c.host}]: Executing check_connectivity_v2")
     
     # get type of current host
     htype = get_type_cached_v2(c)
@@ -882,7 +882,7 @@ def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1') -> None:
     Returns:
         None
     """
-    print(f"[{c.host}]: Running get_host_info_v2")
+    print(f"[{c.host}]: Executing get_host_info_v2")
     
     if htype == '1':
         get_type_cached_v2(c)
@@ -937,7 +937,7 @@ def sanity_checks_v2(c):
     """
     
 
-    print(f"[{c.host}]: Running sanity_checks_v2")
+    print(f"[{c.host}]: Executing sanity_checks_v2")
     
 
     do_check_conn = getattr(config, "TPCONF_check_connectivity", '1') == '1'
