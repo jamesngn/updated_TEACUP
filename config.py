@@ -87,6 +87,12 @@ TPCONF_force_reboot = '0'
 
 TPCONF_boot_timeout = 100
 
+TPCONF_os_partition = {
+	'CYGWIN':  '(hd0,0)',
+	'Linux':   '(hd0,1)',
+	'FreeBSD': '(hd0,2)',
+}
+
 TPCONF_host_os = {
     'controlhost': 'Linux',
     'host1': 'Linux',
