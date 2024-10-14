@@ -47,6 +47,7 @@ from hostmac import get_netmac_cached
 from fabric2 import Connection, task as fabric_v2_task 
 from hosttype import get_type_cached_v2
 from invoke.exceptions import UnexpectedExit
+from hostmac import get_netmac_cached_v2
 
 ## Get interface speed for host, if defined
 #  @param host Host name
@@ -883,7 +884,7 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
         pxe_template = os.path.join(config.TPCONF_script_path, 'conf-macaddr_xx:xx:xx:xx:xx:xx.ipxe.in')
 
         # Use MAC from input or fetch from host
-        mac = host_mac.get(c.host, get_netmac_cached(c))
+        mac = host_mac.get(c.host, get_netmac_cached_v2(c))
         file_name = f'conf-macaddr_{mac}.ipxe'
 
         hdd_partition = config.TPCONF_os_partition.get(target_os, {
