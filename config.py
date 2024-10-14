@@ -83,6 +83,8 @@ TPCONF_test_id = now.strftime("%Y%m%d-%H%M%S") + '_scenario1'
 # Directory to store log files on remote host
 TPCONF_remote_dir = '/tmp/'
 
+TPCONF_force_reboot = '0'
+
 TPCONF_host_os = {
     'controlhost': 'Linux',
     'host1': 'Linux',
