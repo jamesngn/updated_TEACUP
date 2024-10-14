@@ -2081,7 +2081,7 @@ def init_router_v2(c: Connection):
         init_dummynet_v2(c)
     elif htype == 'Linux':
 
-        interfaces = get_netint_cached_v2(c, host=c.host int_no=-1)
+        interfaces = get_netint_cached_v2(c, host=c.host, int_no=-1)
 
         # disable all offloading, e.g. tso = tcp segment offloading
         for interface in interfaces:
