@@ -213,7 +213,7 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
                 "ifconfig | awk '/ether / { printf(\"%s \", $0); next } 1' | "
                 "grep ether | grep 'inet ' | "
                 "awk '{ printf(\"%s %s\\n\", $2, $4) }'",
-                hide=True, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout
+                hide=True).stdout
         elif htype == 'Linux':
             
             # Old command
@@ -221,12 +221,12 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
             #     "ifconfig | awk '/HWaddr / { printf(\"%s \", $0); next } 1' | "
             #     "grep HWaddr | grep 'inet ' | "
             #     "awk '{ printf(\"%s %s\\n\", $5, $7) }' | sed -e 's/addr://'",
-            #     pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
+            #     pty=False).stdout.strip()
             
             # New command (updated by James)
             macips = c.run(
                 "ifconfig eth0 | awk '/ether/ {mac=$2} /inet / && !/inet6/ {ip=$2} END {if (mac && ip) print mac, ip}' | sed -e 's/addr://'",
-                pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
+                pty=False).stdout.strip()
                         
         else:
             raise RuntimeError(f"Can't determine MAC address for OS {htype}")
@@ -312,11 +312,11 @@ def _get_netmac_v2(c: Connection, host='') -> str:
     host_ip = socket.gethostbyname(host)
     
     # Populate ARP table by pinging the host
-    c.local(f'ping -c 1 {host_ip}', echo=True, echo_format=f"[{c.host}]: run {{command}}")
+    c.local(f'ping -c 1 {host_ip}')
 
     # Get MAC address from the ARP table depending on the OS type
     if htype == 'FreeBSD':
-        mac = c.local(f"arp {host_ip} | cut -d' ' -f 4 | head -1", echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
+        mac = c.local(f"arp {host_ip} | cut -d' ' -f 4 | head -1").stdout.strip()
     elif htype == 'Linux':
         mac = c.local(f"arp -a {host_ip} | cut -d' ' -f 4 | head -1",echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
     else:

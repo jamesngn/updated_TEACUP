@@ -120,7 +120,7 @@ def get_type_v2(c: Connection) -> str:
     print(f"[{c.host}]: Executing get_type_v2")
     
     # Run the command and get the Result object
-    result = c.run('uname -s', pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}")
+    result = c.run('uname -s', pty=False)
     
     # Extract the output from the result
     htype = result.stdout.strip()  # Remove any extra whitespace or newlines

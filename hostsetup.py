@@ -1489,7 +1489,7 @@ def init_host_v2(c: Connection):
             c.sudo(f'ethtool -K {interface} gso off')
             c.sudo(f'ethtool -K {interface} lro off')
             c.sudo(f'ethtool -K {interface} gro off')
-            c.sudo('ethtool -K %s ufo off' % interface)
+            c.sudo(f'ethtool -K {interface} ufo off')
             
         # send and recv buffer max (set max to 2MB)
         c.run('sysctl net.core.rmem_max=2097152')

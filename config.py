@@ -283,6 +283,11 @@ hostConfig = Config(overrides={
     },
     "sudo": {
         "password": "password"
+    },
+    "run": {
+        "echo": True,
+        "echo_format": "[{host}] {command}",
+        "warn": True,
     }
 })
 
