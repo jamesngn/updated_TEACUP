@@ -218,6 +218,126 @@ def same_subnet(a, b):
         return True
     else:
         return False
+    
+@fabric_v2_task
+def init_topology_switch_v2(c: Connection, switch='', port_prefix='', port_offset = ''):
+    """Setup VLANs on switch (TASK)
+
+    Args:
+        c (Connection): Fabric Connection object
+        switch (str, optional): Switch DNS name. Defaults to ''.
+        port_prefix (str, optional): Prefix for ports at switch. Defaults to ''.
+        port_offset (str, optional): Host number to port number offset. Defaults to ''.
+    """
+
+    # Fetch config if parameters are not provided
+    if switch == '':
+        try:
+            switch = config.TPCONF_topology_switch
+        except AttributeError:
+            pass
+
+    if switch == '':
+        raise ValueError('Switch name must be defined on the command line or in config.py')
+
+    if port_prefix == '':
+        try:
+            port_prefix = config.TPCONF_topology_switch_port_prefix
+        except AttributeError:
+            pass
+
+    if port_prefix == '':
+        raise ValueError('Port prefix must be defined on the command line or in config.py')
+
+    if port_offset == '':
+        try:
+            port_offset = config.TPCONF_topology_switch_port_offset
+        except AttributeError:
+            pass
+
+    if port_offset == '':
+        raise ValueError('Port offset must be defined on the command line or in config.py')
+
+    if c.host not in config.TPCONF_hosts:
+        raise ValueError(f'Host {c.host} not found in TPCONF_hosts')
+
+    # Get test IP
+    try:
+        test_ip = config.TPCONF_host_internal_ip[c.host][0]
+    except AttributeError:
+        raise ValueError(f'No entry for host {c.host} in TPCONF_host_internal_ip')
+
+    # Get interface speed setting if defined
+    link_speed = get_link_speed(c.host)
+
+    # Get port number and VLAN ID
+    port_number = int(''.join(filter(str.isdigit, c.host))) + int(port_offset)
+    vlan = test_ip.split('.')[2]
+
+    # Connect to the switch via SSH using pexpect
+    s = pexpect.spawn(f'ssh {c.user}@{switch}')
+    s.setecho(False)
+    s.logfile_read = sys.stdout
+    s.logfile_send = sys.stdout
+    ssh_newkey = 'Are you sure you want to continue connecting'
+
+    # Handle SSH prompts
+    i = s.expect([ssh_newkey, 'User Name:', 'assword:', pexpect.EOF, pexpect.TIMEOUT], timeout=5)
+    if i == 0:
+        s.sendline('yes')
+        i = s.expect([ssh_newkey, 'User Name:', 'assword:', pexpect.EOF])
+    if i == 1:
+        s.sendline(c.user)
+        i = s.expect(['User Name:', 'assword:', pexpect.EOF])
+    if i == 2:
+        s.sendline(c.password)
+    elif i == 3:
+        # Already connected with SSH key
+        pass
+    elif i == 4:
+        raise TimeoutError('Timeout while waiting for password prompt')
+
+    # Enter enable mode
+    i = s.expect(['>', '#'])
+    if i == 0:
+        s.sendline('enable')
+        s.expect('#')
+
+    # Check switch version to determine speed setting
+    speed_no_auto = False
+    s.sendline('show version')
+    s.expect('#')
+    if '2.0.1.4' in s.before.decode():
+        speed_no_auto = True
+
+    # Configure VLAN and speed
+    s.sendline('config')
+    s.expect('#')
+    s.sendline(f'int {port_prefix}{port_number}')
+    s.expect('#')
+    s.sendline(f'switchport access vlan {vlan}')
+    s.expect('#')
+
+    # Set speed based on link speed and switch capabilities
+    if speed_no_auto:
+        if link_speed == 'auto':
+            s.sendline('speed 1000')
+        else:
+            s.sendline(f'speed {link_speed}')
+    else:
+        if link_speed in ['10', 'auto']:
+            s.sendline(f'speed {link_speed}')
+        else:
+            s.sendline(f'speed auto {link_speed}')
+
+    s.expect('#')
+    s.sendline('exit')
+    s.expect('#')
+
+    # Show interface configuration
+    s.sendline(f'show interfaces switchport {port_prefix}{port_number}')
+    s.expect('#')
+    s.close()
 
 
 ## Setup NIC and routing on hosts
@@ -453,6 +573,156 @@ def init_topology_host():
             run('ifconfig %s media 1000baseT mediaopt full-duplex' % interface)
 
 
+@fabric_v2_task
+def init_topology_host_v2(c: Connection):
+    """
+    Setup NIC and routing on hosts.
+
+    This task configures network interfaces and sets up routing for hosts in a testbed.
+    Supports different host types (Linux, FreeBSD, CYGWIN, Darwin) and applies specific configurations.
+
+    Args:
+        c (Connection): Fabric connection object representing the host.
+    """
+    
+     # Validate host
+    if c.host not in config.TPCONF_hosts:
+        raise ValueError(f'Host {c.host} not found in TPCONF_hosts')
+
+    # Get test IP
+    try:
+        test_ip = config.TPCONF_host_internal_ip[c.host][0]
+    except AttributeError:
+        raise ValueError(f'No entry for host {c.host} in TPCONF_host_internal_ip')
+    
+    link_speed = get_link_speed(c.host)
+    
+    #
+    # set network interface
+    #
+
+    # find the router we are connected to
+    conn_router = ''
+    for r in config.TPCONF_router:
+        for r_ip in config.TPCONF_host_internal_ip[r]:
+            if same_subnet(test_ip, r_ip):
+                conn_router = r
+                break
+        if conn_router:
+            break
+        
+    if not conn_router:
+        raise ValueError(f'Cannot find router that host {c.host} is connected to')
+
+    subnet1 = '.'.join(config.TPCONF_host_internal_ip[conn_router][0].split('.')[:3])
+    subnet2 = '.'.join(config.TPCONF_host_internal_ip[conn_router][1].split('.')[:3])
+    test_subnet = '.'.join(test_ip.split('.')[:3])
+
+    # Get host type (Linux, FreeBSD, etc.)
+    htype = get_type_cached_v2(c.host)
+    
+    if htype == 'Linux':
+        ethtool_options = 'autoneg on duplex full' if link_speed == 'auto' else f'autoneg off speed {link_speed} duplex full'
+        test_if_config = f"""
+        BOOTPROTO='static'
+        BROADCAST=''
+        ETHTOOL_OPTIONS='{ethtool_options}'
+        IPADDR='{test_ip}/24'
+        MTU=''
+        NAME='Test IF'
+        NETWORK=''
+        REMOTE_IPADDR=''
+        STARTMODE='auto'
+        USERCONTROL='no'
+        """
+        
+        interface = 'eth1'
+        filename = f'{c.host}_test_if_config'
+        
+        with open(filename, 'w') as f:
+            f.write(test_if_config)
+
+        c.put(filename, f'/etc/sysconfig/network/ifcfg-{interface}')
+        os.remove(filename)
+
+        route = f"{subnet2}.0 {subnet1}.1 255.255.255.0 {interface}" if test_subnet == subnet1 else f"{subnet1}.0 {subnet2}.1 255.255.255.0 {interface}"
+        c.run(f'echo {route} > /etc/sysconfig/network/routes')
+        c.run('systemctl restart network.service')
+    elif htype == 'FreeBSD':
+        ctl_interface = 'em0'
+        interface = 'em1'
+        
+        c.run('cp -a /etc/rc.conf /etc/rc.conf.bak')
+        c.run(f'grep -Ev "^static_routes|route_|^ifconfig_{interface}" /etc/rc.conf > __tmp && mv __tmp /etc/rc.conf')
+        
+        media_settings = 'media auto' if link_speed != '10' else 'media 10baseT mediaopt full-duplex'
+        c.run(f'echo \'ifconfig_{interface}="{test_ip} netmask 255.255.255.0 {media_settings}"\' >> /etc/rc.conf', shell_escape=False)
+        
+        route1 = f'static_routes="internalnet2"' if test_subnet == subnet1 else f'static_routes="internalnet1"'
+        route2 = f'route_internalnet2="-net {subnet2}.0/24 {subnet1}.1"' if test_subnet == subnet1 else f'route_internalnet1="-net {subnet1}.0/24 {subnet2}.1"'
+        
+        c.run(f'echo \'{route1}\' >> /etc/rc.conf', shell_escape=False)
+        c.run(f'echo \'{route2}\' >> /etc/rc.conf', shell_escape=False)
+        
+        c.run(f'/etc/rc.d/netif restart {interface}', warn=True)
+        c.run(f'/etc/rc.d/routing restart', warn=True)
+        c.run(f'/etc/rc.d/netif restart {ctl_interface}', warn=True)
+        
+    elif htype == 'CYGWIN':
+        c.run(f'route delete {subnet1}.0 -p', warn=True)
+        c.run(f'route delete {subnet2}.0 -p', warn=True)
+        
+        # Find the correct interface
+        interfaces_all = c.run('ipconfig /all').stdout
+        interface = ''
+        for line in interfaces_all.splitlines():
+            if 'Ethernet adapter' in line:
+                interface = line.replace('Ethernet adapter ', '').replace(':', '').rstrip()
+            if '68-05-CA-' in line:
+                break
+
+        # Configure static IP
+        c.run(f'netsh interface ip set address "{interface}" static {test_ip} 255.255.255.0')
+
+        time.sleep(5)
+
+        # Set static route
+        route_print = c.run('route print').stdout
+        interface_id = ''
+        for line in route_print.splitlines():
+            if '68 05 ca' in line:
+                interface_id = line.lstrip()[:2].replace('.', '')
+                break
+
+        route_cmd = f'route add {subnet2}.0 mask 255.255.255.0 {subnet1}.1 if {interface_id} -p' if test_subnet == subnet1 else f'route add {subnet1}.0 mask 255.255.255.0 {subnet2}.1 if {interface_id} -p'
+        c.run(route_cmd)
+
+    elif htype == 'Darwin':
+        c.run(f'route -n delete {subnet1}.0/24', warn=True)
+        c.run(f'route -n delete {subnet2}.0/24', warn=True)
+        
+        # Setup interface
+        c.run(f'networksetup -setmanual "Ethernet" {test_ip} 255.255.255.0')
+
+        # Set static route
+        par1, par2 = (subnet2, subnet1) if test_subnet == subnet1 else (subnet1, subnet2)
+        interface = 'en0'
+        
+        c.run(f'route -n add {par2}.0/24 -interface {interface}')
+        c.run(f'sed "s/route add .*$/route add {par1}.0\/24 {par2}.1/" /Library/StartupItems/AddRoutes/AddRoutes > __tmp && mv __tmp /Library/StartupItems/AddRoutes/AddRoutes')
+        c.run('chmod a+x /Library/StartupItems/AddRoutes/AddRoutes')
+        c.run('/Library/StartupItems/AddRoutes/AddRoutes start')
+        
+        # Set link speed
+        if link_speed == '10':
+            c.run(f'ifconfig {interface} media 10baseT/UTP mediaopt full-duplex')
+        elif link_speed == '100':
+            c.run(f'ifconfig {interface} media 100baseTX mediaopt full-duplex')
+        else:
+            c.run(f'ifconfig {interface} media 1000baseT mediaopt full-duplex')
+    else:
+        raise ValueError(f'Unknown host type {htype} for host {c.host}')
+
 ## Setup testbed network topology (TASK)
 ## This tasks makes a number of assumptions:
 ## - One router dumbbell toplogy
@@ -474,6 +744,27 @@ def init_topology(switch='', port_prefix='', port_offset = ''):
     execute(init_topology_switch, switch, port_prefix, port_offset)
     # configure hosts in parallel
     execute(init_topology_host)
+    
+@fabric_v2_task
+def init_topology_v2(c: Connection, switch='', port_prefix='', port_offset = ''):
+    """
+    ## Setup testbed network topology (TASK)
+    This tasks makes a number of assumptions:
+    - One router dumbbell toplogy
+    - hosts are numbered and numbers relate to the switch port  (starting from first port)
+    - VLAN number is the same as 3rd octet of IP
+    - there are two test subnets 172.16.10.0/24, 172.16.11.0/24
+    - interface names are known/hardcoded
+
+    Args:
+        c (Connection): Fabric Connection object
+        switch (str, optional): Switch DNS name. Defaults to ''.
+        port_prefix (str, optional): Prefix for ports at switch. Defaults to ''.
+        port_offset (str, optional): Host number to port number offset. Defaults to ''.
+    """
+    
+    init_topology_switch_v2(c, switch, port_prefix, port_offset)
+    init_topology_host_v2(c)
 
 
 ## Power cycle hosts via the 9258HP power controllers

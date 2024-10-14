@@ -70,7 +70,7 @@ from trafficgens import start_iperf, start_ping, \
     
 # UPDATED:
 from fabric2 import Connection, task as fabric_v2_task, SerialGroup, Config
-from hostsetup import init_os_hosts_v2
+from hostsetup import init_os_hosts_v2, init_topology_switch_v2, init_topology_host_v2
 from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2,  sanity_checks_v2, get_host_info_v2
 
 from internalutil import execute_on_group
@@ -465,6 +465,37 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     clear_type_cache()  # clear host type cache
     disconnect_all()  # close all connections
     time.sleep(30)  # give hosts some time to settle down (after reboot)
+    
+    try:
+        switch = '' 
+        port_prefix = ''
+        port_offset = 0
+        try:
+            switch = config.TPCONF_topology_switch
+            port_prefix = config.TPCONF_topology_switch_port_prefix
+            port_offset = config.TPCONF_topology_switch_port_offset
+        except AttributeError:
+            pass 
+
+        if config.TPCONF_config_topology == '1' and do_init_os == '1': 
+            # we cannot call init_topology directly, as it is decorated with
+            # runs_once. in experiment.py we have empty host list whereas if we
+            # run init_topology from command line we have the -H host list. executing
+            # an runs_once task with empty host list (hosts set in execute call), it
+            # will only be executed for the first host, which is not what we
+            # want. in contrast if we have a host list in context, execute will be
+            # executed once for each host (hence we need runs_once when called from
+            # the command line).
+
+            # sequentially configure switch
+            for host in config.TPCONF_hosts:
+                conn : Connection = config.hosts_connection_object[host]
+                
+                init_topology_switch_v2(conn, switch, port_prefix, port_offset)
+                # configure hosts in parallel
+                init_topology_host_v2(conn)
+    except AttributeError:
+        pass
                 
                 
             
