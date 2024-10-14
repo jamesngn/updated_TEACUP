@@ -30,9 +30,14 @@
 # $Id: routersetup.py,v 3b086222a74b 2017/02/20 09:26:27 gja $
 
 import config
-from fabric.api import task, hosts, run, execute, abort, env, settings, sudo
+from fabric.api import task as fabric_task, hosts, run, execute, abort, env, settings, sudo
 from hostint import get_netint_cached, get_address_pair
 from hosttype import get_type_cached
+
+# Updated:
+from fabric2 import Connection, Config, SerialGroup, task as fabric_v2_task
+from hostint import get_netint_cached_v2, get_address_pair_v2
+from hosttype import get_type_cached_v2
 
 
 ## Initialise single dummynet pipe
@@ -318,6 +323,10 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
 def show_dummynet_pipes():
     run('ipfw -a list')
     run('ipfw -a pipe list')
+    
+def show_dummynet_pipes_v2(c: Connection):
+    c.run('ipfw -a list')
+    c.run('ipfw -a pipe list')
 
 
 ## Show tc setup
@@ -336,9 +345,27 @@ def show_tc_setup():
         cnt += 1
     sudo('iptables -t mangle -vL')
 
+def show_tc_setup_v2(c: Connection):
+    """Show tc setup
+
+    Args:
+        c (Connection): Fabric Connection object
+    """
+    interfaces = get_netint_cached_v2(c.host, int_no=-1)
+
+    c.run('tc -d -s qdisc show')
+    cnt = 0
+    for interface in interfaces:
+        c.run(f'tc -d -s class show dev {interface}')
+        c.run(f'tc -d -s filter show dev {interface}')
+        pseudo_interface = f'ifb{cnt}'
+        c.run(f'tc -d -s class show dev {pseudo_interface}')
+        c.run(f'tc -d -s filter show dev {pseudo_interface}')
+        cnt += 1
+    c.sudo('iptables -t mangle -vL')
 
 ## Show pipe setup
-@task
+@fabric_task
 def show_pipes():
     "Show pipe setup on router"
 
@@ -352,12 +379,26 @@ def show_pipes():
     else:
         abort("Router must be running FreeBSD or Linux")
 
+@fabric_v2_task
+def show_pipes_v2(c: Connection):
+    "Show pipe setup on router"
+
+    # get type of current host
+    htype = get_type_cached_v2(c.host)
+
+    if htype == 'FreeBSD':
+        show_dummynet_pipes_v2(c)
+    elif htype == 'Linux':
+        show_tc_setup_v2(c)
+    else:
+        raise RuntimeError("Router must be running FreeBSD or Linux")
+
 
 ## Configure a pipe on the router, encompassing rate shaping, AQM, 
 ## loss/delay emulation
 ## For parameter explanations see descriptions of init_dummynet_pipe() and init_tc_pipe()
 ## Note: attach_to_queue only works for Linux
-@task
+@fabric_task
 def init_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', loss='',
               queue_size='', queue_size_mult='1.0', queue_disc='', 
               queue_disc_params='', bidir='0', attach_to_queue=''):

@@ -71,7 +71,9 @@ from trafficgens import start_iperf, start_ping, \
 # UPDATED:
 from fabric2 import Connection, task as fabric_v2_task, SerialGroup, Config
 from hostsetup import init_host_v2, init_ecn_v2, init_cc_algo_v2, init_router_v2,init_hosts_v2, init_os_hosts_v2, init_host_custom_v2, init_topology_switch_v2, init_topology_host_v2
+from loggers import log_config_params_v2, log_host_tcp_v2
 from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2,  sanity_checks_v2, get_host_info_v2
+from routersetup import show_pipes_v2
 
 from internalutil import execute_on_group
 
@@ -503,6 +505,29 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
         get_host_info_v2(conn, netmac='0')
         sanity_checks_v2(conn)
         init_hosts_v2(conn)
+        
+        
+    # first is the legacy case with single router and single queue definitions
+    # second is the multiple router case with several routers and several queue
+    # definitions
+    if isinstance(config.TPCONF_router_queues, list):
+        # start queues/pipes
+        config_router_queues(config.TPCONF_router_queues, config.TPCONF_router, 
+                             **kwargs)
+        # show pipe setup
+        for host in config.TPCONF_router:
+            conn : Connection = config.host_to_conn[host]
+            show_pipes_v2(conn)
+    elif isinstance(config.TPCONF_router_queues, dict):
+        for router in config.TPCONF_router_queues.keys():
+            # start queues/pipes for router r
+            config_router_queues(config.TPCONF_router_queues[router], [router], 
+                                 **kwargs)
+            # show pipe setup
+            for host in [router]:
+                conn : Connection = config.host_to_conn[host]
+                show_pipes_v2(conn)
                 
-                
+    log_config_params_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)
+    log_host_tcp_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)            
             

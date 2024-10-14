@@ -41,6 +41,8 @@ from hostint import get_netint_cached, get_netint_windump_cached
 from getfile import getfile
 from runbg import runbg
 
+#Updated:
+import os
 
 ## Collect all the arguments (here basically a dummy method because we
 ## don't used the return value)
@@ -207,6 +209,116 @@ def log_config_params(
 
     local('gzip -f %s' % fname)
 
+def log_config_params_v2(
+        file_prefix='', local_dir='.', only_used='0', *args, **kwargs):
+    """
+    Dump parameters from config file.
+
+    This function dumps the configuration parameters used in an experiment 
+    into a log file. It can either dump all parameters defined or only the 
+    ones that were used during the experiment.
+
+    Args:
+        file_prefix (str): Prefix for the file name.
+        local_dir (str): Directory on the control host where the file is copied to.
+        only_used (str): If '0', print all parameters defined (default).
+                         If '1', print only used parameters.
+        *args: Additional arguments.
+        **kwargs: Additional keyword arguments.
+    """
+    
+    cfg_vars = {}
+    used_vars = {}
+
+    fname = os.path.join(local_dir, f'{file_prefix}_config_vars.log')
+
+    # First, identify all used parameters
+
+    # Add the special ones
+    used_vars['V_duration'] = 1
+    used_vars['V_ecn'] = 1
+    used_vars['V_tcp_cc_algo'] = 1
+    used_vars['V_runs'] = 1
+
+    # Process router queues
+    if isinstance(config.TPCONF_router_queues, list):
+        add_vars_router_queues(config.TPCONF_router_queues, used_vars)
+    elif isinstance(config.TPCONF_router_queues, dict):
+        for router in config.TPCONF_router_queues.keys():
+            add_vars_router_queues(config.TPCONF_router_queues[router], used_vars)
+
+    # Process traffic generators
+    for t, c, v in config.TPCONF_traffic_gens:
+        # Strip the method name
+        arg_list = v.split(',')
+        arg_list.pop(0)
+        v = ', '.join(arg_list)
+        # Prepare so that _param_used is called
+        v = re.sub("(V_[a-zA-Z0-9_-]*)", "_param_used('\\1', used_vars)", v)
+        # Evaluate the string
+        eval('_args(%s)' % v)
+
+    # Process TCP algo parameters
+    for host_cfg in config.TPCONF_host_TCP_algo_params.values():
+        for algo, algo_params in host_cfg.items():
+            for entry in algo_params:
+                if entry != '':
+                    sysctl_name, val = entry.split('=')
+                    # Eval the value (could be a variable name)
+                    val = re.sub(
+                        "(V_[a-zA-Z0-9_-]*)",
+                        "_param_used('\\1', used_vars)",
+                        val)
+                    eval('%s' % val)
+
+    # Process custom init commands
+    for cmds in config.TPCONF_host_init_custom_cmds.values():
+        for cmd in cmds:
+            if re.search("V_[a-zA-Z0-9_-]*", cmd):
+                # This only works if we have only V_ variables
+                val = re.sub(
+                    ".*(V_[a-zA-Z0-9_-]*).*",
+                    "_param_used('\\1', used_vars)",
+                    cmd)
+                eval('%s' % val)
+
+    # Second, write parameters to file
+
+    with open(fname, 'w') as f:
+        f.write(
+            'Log of config.py V_ parameters for experiment (alphabetical order)\n\n')
+        f.write('Legend:\n')
+        f.write('U|N(=Used|Unused) Name: Value\n\n')
+
+        for name in config.TPCONF_vary_parameters:
+            entry = config.TPCONF_parameter_list[name]
+            var_list = entry[0]
+            add_vars = entry[3]
+
+            for var in var_list:
+                val = eval('_param(\'%s\', kwargs)' % var)
+                cfg_vars[var] = val
+
+            if len(add_vars) > 0:
+                for var, val in add_vars.items():
+                    cfg_vars[var] = val
+
+        for var, val in config.TPCONF_variable_defaults.items():
+            if var not in cfg_vars:
+                cfg_vars[var] = val
+
+        # Write the used or all parameters to the log file
+        for var, val in sorted(cfg_vars.items()):
+            if var in used_vars:
+                f.write(f'U {var}: {val}\n')
+            else:
+                if only_used == '0':
+                    f.write(f'N {var}: {val}\n')
+
+    # Compress the log file
+    os.system(f'gzip -f {fname}')
+
+    
 
 ## Log host TCP settings
 #  @param file_prefix Prefix for file name
@@ -278,6 +390,85 @@ def log_host_tcp(file_prefix='', local_dir='.', *args, **kwargs):
                             f.write('   %s = %s\n' % (sysctl_name, val))
 
     local('gzip -f %s' % fname)
+
+
+
+def log_host_tcp_v2(file_prefix='', local_dir='.', *args, **kwargs):
+    """
+    Dump TCP configuration of hosts.
+
+    This function logs the TCP settings of each host in the network testbed.
+    It determines the TCP congestion control algorithm and associated 
+    parameters for each host and saves them to a log file.
+
+    Args:
+        file_prefix (str): Prefix for the file name.
+        local_dir (str): Directory on the control host where the file will be saved.
+        *args: Additional arguments.
+        **kwargs: Additional keyword arguments.
+    """
+    
+    fname = os.path.join(local_dir, f'{file_prefix}_host_tcp.log')
+
+    with open(fname, 'w') as f:
+        f.write('Log of host TCP settings\n\n')
+        f.write('Legend:\n')
+        f.write('Host: TCP\n')
+        f.write('   [TCP_param1]\n')
+        f.write('   [TCP_param2]\n')
+        f.write('   ...\n\n')
+
+        cfg_algo = eval('_param("V_tcp_cc_algo", kwargs)')
+
+        for host in config.TPCONF_hosts:
+            if cfg_algo[:4] == 'host':
+                arr = cfg_algo.split('t')
+                if len(arr) == 2 and arr[1].isdigit():
+                    num = int(arr[1])
+                else:
+                    raise ValueError(
+                        'If you specify host<N>, the <N> must be an integer number')
+
+                algo_list = config.TPCONF_host_TCP_algos.get(host, [])
+                if len(algo_list) == 0:
+                    raise ValueError(
+                        f'No TCP congestion control algorithms defined for host {host}')
+
+                if num > len(algo_list) - 1:
+                    num = 0
+                algo = algo_list[num]
+            else:
+                algo = cfg_algo
+
+            # Determine default TCP algorithm based on OS
+            if algo == 'default':
+                if config.TPCONF_host_os[host] == 'FreeBSD':
+                    algo = 'newreno'
+                elif config.TPCONF_host_os[host] == 'Linux':
+                    algo = 'cubic'
+                elif config.TPCONF_host_os[host] == 'CYGWIN':
+                    algo = 'compound'
+
+            f.write(f'{host}: {algo}\n')
+
+            host_config = config.TPCONF_host_TCP_algo_params.get(host, None)
+            if host_config is not None:
+                algo_params = host_config.get(algo, None)
+                if algo_params is not None:
+                    # algo params is a list of strings in the form sysctl=value
+                    for entry in algo_params:
+                        if entry != '':
+                            sysctl_name, val = entry.split('=')
+                            # Eval the value (could be a variable name)
+                            val = re.sub(
+                                "(V_[a-zA-Z0-9_-]*)",
+                                "_param('\\1', kwargs)",
+                                val)
+                            val = eval(f'{val}')
+                            f.write(f'   {sysctl_name} = {val}\n')
+
+    # Compress the log file
+    os.system(f'gzip -f {fname}')
 
 
 ## Log system data
