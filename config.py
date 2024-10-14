@@ -280,6 +280,9 @@ TPCONF_vary_parameters = ['delays', 'bandwidths', 'aqms', 'runs',]
 hostConfig = Config(overrides={
     "connect_kwargs": {
         "password": "password"
+    },
+    "sudo": {
+        "password": "password"
     }
 })
 
