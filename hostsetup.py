@@ -1475,7 +1475,7 @@ def init_host_v2(c: Connection):
         # disable auto-tuning of receive buffer
         c.run('sysctl net.ipv4.tcp_moderate_rcvbuf=0')
 
-        interfaces = get_netint_cached_v2(c, int_no=-1)
+        interfaces = get_netint_cached_v2(c, host=c.host ,int_no=-1)
 
         # Disable offloading for each interface
         for interface in interfaces:
@@ -1523,7 +1523,7 @@ def init_host_v2(c: Connection):
         # level
         c.run('netsh int tcp set heuristics disabled', pty=False)
 
-        interfaces = get_netint_cached_v2(c, int_no=-1)
+        interfaces = get_netint_cached_v2(c, host=c.host int_no=-1)
 
         for interface in interfaces:
             # stop and restart interface to make the changes
@@ -2006,7 +2006,7 @@ def init_tc_v2(c: Connection):
     c.run('modprobe ifb')
 
     # get all interfaces
-    interfaces = get_netint_cached_v2(c, int_no=-1)
+    interfaces = get_netint_cached_v2(c, host=c.host int_no=-1)
 
     # delete all rules
     for interface in interfaces:
@@ -2081,7 +2081,7 @@ def init_router_v2(c: Connection):
         init_dummynet_v2(c)
     elif htype == 'Linux':
 
-        interfaces = get_netint_cached_v2(c, int_no=-1)
+        interfaces = get_netint_cached_v2(c, host=c.host int_no=-1)
 
         # disable all offloading, e.g. tso = tcp segment offloading
         for interface in interfaces:
