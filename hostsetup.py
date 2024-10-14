@@ -824,36 +824,36 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
         None
     """
     
-    _boot_timeout = int(boot_timeout)
+    # _boot_timeout = int(boot_timeout)
 
-    if _boot_timeout < 60:
-        print(f"[{c.host}]: Boot timeout value too small, using 60 seconds")
-        _boot_timeout = 60
+    # if _boot_timeout < 60:
+    #     print(f"[{c.host}]: Boot timeout value too small, using 60 seconds")
+    #     _boot_timeout = 60
 
-    # Get OS list and split it into values
-    host_os_vals = os_list.split(',')
-    if len(c.hosts) < len(host_os_vals):
-        raise ValueError('Number of OSs specified must be the same as number of hosts')
+    # # Get OS list and split it into values
+    # host_os_vals = os_list.split(',')
+    # if len(env.all_hosts) < len(host_os_vals):
+    #     raise ValueError('Number of OSs specified must be the same as number of hosts')
 
-    # Adjust length if necessary
-    while len(host_os_vals) < len(c.hosts):
-        host_os_vals.append(host_os_vals[-1])
+    # # Adjust length if necessary
+    # while len(host_os_vals) < len(c.hosts):
+    #     host_os_vals.append(host_os_vals[-1])
 
-    host_mac = {} 
-    if mac_list != '': 
-        mac_vals = mac_list.split(',')
-        if len(c.hosts) != len(mac_vals):
-            raise ValueError('Must specify one MAC address for each host')
+    # host_mac = {} 
+    # if mac_list != '': 
+    #     mac_vals = mac_list.split(',')
+    #     if len(c.hosts) != len(mac_vals):
+    #         raise ValueError('Must specify one MAC address for each host')
 
-        # Create a dictionary
-        host_mac = dict(zip(c.hosts, mac_vals))
+    #     # Create a dictionary
+    #     host_mac = dict(zip(c.hosts, mac_vals))
 
-    # Get the host OS
-    htype = get_type_cached(c)
+    # # Get the host OS
+    # htype = get_type_cached(c)
 
-    if not htype:
-        # Host not accessible, set htype to unknown
-        htype = '?'
+    # if not htype:
+    #     # Host not accessible, set htype to unknown
+    #     htype = '?'
 
     # Get dictionary from host and OS lists
     print("env all hosts: ", env.all_hosts)
