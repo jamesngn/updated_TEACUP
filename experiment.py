@@ -69,7 +69,7 @@ from trafficgens import start_iperf, start_ping, \
     start_dash_streaming_dashjs, start_nginx_server
     
 # UPDATED:
-from fabric2 import Connection, task as fabric_task_v2, SerialGroup, Config
+from fabric2 import Connection, task as fabric_v2_task, SerialGroup, Config
 
 from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2,  sanity_checks_v2, get_host_info_v2
 
@@ -465,6 +465,7 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     
     # # Execute get_host_info_v2 on all hosts in the group
     # execute_on_group(group, get_host_info_v2, netint='0')
+    #TODO: add if tftpboot_dir != '' and do_init_os == '1':
     for host in all_hosts:
         print(f"Connecting to {host}")
         with Connection(host, config=custom_config) as c:

@@ -33,7 +33,7 @@ import re
 import socket
 import config
 
-from fabric2 import Connection, task as fabric_task_v2
+from fabric2 import Connection, task as fabric_v2_task
 from invoke import UnexpectedExit
 
 from fabric.api import task as fabric_task, warn, local, run, execute, abort, hosts, env
@@ -175,7 +175,7 @@ def get_netmac(internal_int='0'):
     return mac.lower()
 
 
-@fabric_task_v2
+@fabric_v2_task
 def get_netmac_v2(c: Connection, internal_int='0') -> str:
     """
     Get MAC address of the host's internal or external network interface.
@@ -227,9 +227,7 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
             macips = c.run(
                 "ifconfig eth0 | awk '/ether/ {mac=$2} /inet / && !/inet6/ {ip=$2} END {if (mac && ip) print mac, ip}' | sed -e 's/addr://'",
                 pty=False, echo=True, echo_format=f"[{c.host}]: run {{command}}").stdout.strip()
-            
-            
-            
+                        
         else:
             raise RuntimeError(f"Can't determine MAC address for OS {htype}")
 
@@ -239,25 +237,20 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
                 a = line.split(' ')
                 ip_mac_map[a[1].strip()] = a[0].strip()
                 
-        print (f"[{c.host}]: IP-MAC map: {ip_mac_map}")
                 
         # Resolve hostname to IP if necessary
-        print(f"[{c.host}]: Resolving IP for {host_string}")
         if not re.match(r'[0-9.]+', host_string):
             ip = socket.gethostbyname(host_string)  # Try DNS resolution
         else:
             ip = host_string
             
-        print(f"[{c.host}]: Resolved IP: {ip}")
 
         if ip != '127.0.0.1':
             mac = ip_mac_map.get(ip)
         else:
             # Guess it's the first NIC
             mac = list(ip_mac_map.values())[0] if ip_mac_map else None
-            print(list(ip_mac_map.values()))
             
-        print(f"[{c.host}]: MAC address: {mac}")
 
     else:
         # Get MAC of non-router
@@ -266,12 +259,10 @@ def get_netmac_v2(c: Connection, internal_int='0') -> str:
         else:
             host_string = config.TPCONF_host_internal_ip.get(c.host, [None])[0]
             
-        print(f"[{c}]: Getting MAC address for {host_string} from router {config.TPCONF_router[0]}")
 
         mac = _get_netmac_v2(c, host_string)
 
 
-    print(f"[{c.host}]: Returning MAC address: {mac.lower() if mac else None}")
 
     return mac.lower() if mac else None
 
@@ -301,7 +292,7 @@ def _get_netmac(host=''):
     return mac
 
 
-@fabric_task_v2
+@fabric_v2_task
 def _get_netmac_v2(c: Connection, host='') -> str:
     """
     Get MAC address of non-router by pinging the host (and thereby populating the ARP table)

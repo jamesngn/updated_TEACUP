@@ -40,7 +40,7 @@ from hostmac import get_netmac, get_netmac_cached
 # UPDATED: 2024-10-10
 from typing import List, Dict
 
-from fabric2 import Connection, task as fabric_task_v2
+from fabric2 import Connection, task as fabric_v2_task
 
 from hosttype import get_type_cached_v2
 from hostmac import get_netmac_v2, get_netmac_v2
@@ -386,7 +386,7 @@ def get_netint(int_no=0, windump='0', internal_int='1'):
     else:
         abort('Cannot determine network interface for OS %s' % htype)
         
-@fabric_task_v2
+@fabric_v2_task
 def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
     """
     Get network interface name.

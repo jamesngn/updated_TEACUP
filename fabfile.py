@@ -90,7 +90,7 @@ from hostmac import get_netmac_v2
 
 from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2, sanity_checks_v2, check_time_sync_v2, get_host_info_v2
 
-
+from hostsetup import init_os_v2, init_os_hosts_v2
 
 try:
     from hostsetup import init_topology

@@ -36,12 +36,15 @@ import subprocess
 import string
 import pexpect # must use version 3.2, version 3.3 does not work
 import config
-from fabric.api import reboot, task, warn, local, puts, run, execute, abort, \
+from fabric.api import reboot, task as fabric_task, warn, local, puts, run, execute, abort, \
     hosts, env, settings, parallel, put, runs_once, hide, sudo
 from fabric.exceptions import NetworkError
 from hosttype import get_type_cached, get_type
 from hostint import get_netint_cached
 from hostmac import get_netmac_cached
+
+#UPDATED:
+from fabric2 import Connection, task as fabric_v2_task 
 
 
 ## Get interface speed for host, if defined
@@ -72,7 +75,7 @@ def get_link_speed(host):
 #  @param switch Switch DNS name
 #  @param port_prefix Prefix for ports at switch
 #  @param port_offset Host number to port number offset
-@task
+@fabric_task
 # XXX parallel crashes when configuring switch. maybe just session limit on switch
 # but to avoid overwhelming switch, run sequentially
 #@parallel
@@ -222,7 +225,7 @@ def same_subnet(a, b):
 # these. in the future could determine all reachable subnets and configure
 # static routers for all of these. See check_connecvity on how to determine
 # reachable subnets.
-@task
+@fabric_task
 @parallel
 def init_topology_host():
     "Topology setup host"
@@ -459,7 +462,7 @@ def init_topology_host():
 #  @param switch Switch DNS name
 #  @param port_prefix Prefix for ports at switch
 #  @param port_offset Host number to port number offset
-@task
+@fabric_task
 # we need to invoke this task with runs_once, as otherwise this task will run once for each host listed in -H
 @runs_once
 def init_topology(switch='', port_prefix='', port_offset = ''):
@@ -472,7 +475,7 @@ def init_topology(switch='', port_prefix='', port_offset = ''):
 
 
 ## Power cycle hosts via the 9258HP power controllers
-@task
+@fabric_task
 @parallel
 def power_cycle():
     "Power cycle host using the power controller"
@@ -566,7 +569,7 @@ def power_cycle():
 #  @param tftp_server Specify the TFTP server in the form <server_ip>:<port> 
 #  @param mac_list Comma-separated list of MAC addresses for hosts (MACs of boot interfaces)
 #                  Only required if hosts are unresponsive/inaccessible.
-@task
+@fabric_task
 @parallel
 def init_os(file_prefix='', os_list='', force_reboot='0', do_power_cycle='0',
             boot_timeout='100', local_dir='.',
@@ -793,6 +796,77 @@ def init_os(file_prefix='', os_list='', force_reboot='0', do_power_cycle='0',
             'Leaving %s as OS %s %s' %
             (env.host_string, target_os, target_kern))
 
+@fabric_v2_task
+def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
+                do_power_cycle='0',
+                boot_timeout='100', local_dir='.',
+                linux_kern_router='3.10.18-vanilla-10000hz',
+                linux_kern_hosts='3.9.8-desktop-web10g',
+                tftp_server='10.1.1.11:8080',
+                mac_list=''):
+    """
+    Boot host into selected OS (TASK).
+
+    Args:
+        c (Connection): Fabric 2 Connection object.
+        file_prefix (str, optional): Prefix for generated PXE boot file. Defaults to ''.
+        os_list (str, optional): Comma-separated string of OS (Linux, FreeBSD, CYGWIN), one for each host. Defaults to ''.
+        force_reboot (str, optional): If '0' (host will only be rebooted if OS should be changed), if '1' (host will always be rebooted). Defaults to '0'.
+        do_power_cycle (str, optional): If '0' (never power cycle host), if '1' (power cycle host if host does not come up after timeout). Defaults to '0'.
+        boot_timeout (str, optional): Reboot timeout in seconds (integer). Defaults to '100'.
+        local_dir (str, optional): Directory to put the generated .ipxe files in. Defaults to '.'.
+        linux_kern_router (str, optional): Linux kernel to boot on router. Defaults to '3.10.18-vanilla-10000hz'.
+        linux_kern_hosts (str, optional): Linux kernel to boot on hosts. Defaults to '3.9.8-desktop-web10g'.
+        tftp_server (str, optional): Specify the TFTP server in the form <server_ip>:<port>. Defaults to '10.1.1.11:8080'.
+        mac_list (str, optional): Comma-separated list of MAC addresses for hosts (MACs of boot interfaces). Only required if hosts are unresponsive/inaccessible. Defaults to ''.
+
+    Returns:
+        None
+    """
+    
+    _boot_timeout = int(boot_timeout)
+
+    if _boot_timeout < 60:
+        print(f"[{c.host}]: Boot timeout value too small, using 60 seconds")
+        _boot_timeout = 60
+
+    # Get OS list and split it into values
+    host_os_vals = os_list.split(',')
+    if len(c.hosts) < len(host_os_vals):
+        raise ValueError('Number of OSs specified must be the same as number of hosts')
+
+    # Adjust length if necessary
+    while len(host_os_vals) < len(c.hosts):
+        host_os_vals.append(host_os_vals[-1])
+
+    host_mac = {} 
+    if mac_list != '': 
+        mac_vals = mac_list.split(',')
+        if len(c.hosts) != len(mac_vals):
+            raise ValueError('Must specify one MAC address for each host')
+
+        # Create a dictionary
+        host_mac = dict(zip(c.hosts, mac_vals))
+
+    # Get the host OS
+    htype = get_type_cached(c)
+
+    if not htype:
+        # Host not accessible, set htype to unknown
+        htype = '?'
+
+    # Get dictionary from host and OS lists
+    print("env all hosts: ", env.all_hosts)
+    print("env host string: ", env.host_string)
+    # host_os = dict(zip(c.hosts, host_os_vals))
+
+    # Target OS
+    # target_os = host_os.get(c.host, '')
+    
+    
+    
+    
+    
 
 ## Boot host into right kernel/OS
 #  @param file_prefix Prefix for generated PXE boot file (test ID prefix)
@@ -843,10 +917,45 @@ def init_os_hosts(file_prefix='', local_dir='.'):
             linux_kern_router=linux_kern_router, linux_kern_hosts=linux_kern_hosts,
             tftp_server=tftp_server,
             hosts=hosts_list)
+    
+def init_os_hosts_v2(file_prefix='', local_dir='.'):
+    """
+    Boot hosts into the right kernel/OS using Fabric 2 and Python 3.
+    
+    Args:
+        file_prefix (str): Prefix for generated PXE boot file (test ID prefix).
+        local_dir (str): Directory to put the generated .ipxe files in.
+    """
+
+    # Create a list of hosts (routers + testbed hosts)
+    hosts_list = config.TPCONF_router + config.TPCONF_hosts
+    
+    # Create a comma-separated string of OSs to pass to init_os task
+    os_list = [config.TPCONF_host_os[host] for host in hosts_list]
+    os_list_str = ','.join(os_list)
+
+    # For backwards compatibility: check TPCONF_linux_kern_router
+    linux_kern_router = '3.10.18-vanilla-10000hz'
+    linux_kern_hosts = '3.9.8-desktop-web10g'
+    do_power_cycle = '0'
+    tftp_server = '10.1.1.11:8080'
+
+    # Handle optional configuration variables using getattr for defaults
+    linux_kern_router = getattr(config, 'TPCONF_linux_kern_router', linux_kern_router)
+    linux_kern_hosts = getattr(config, 'TPCONF_linux_kern_hosts', linux_kern_hosts)
+    do_power_cycle = getattr(config, 'TPCONF_do_power_cycle', do_power_cycle)
+    tftp_server = getattr(config, 'TPCONF_tftpserver', tftp_server)
+    
+    init_os_v2(file_prefix, os_list=os_list_str, force_reboot=config.TPCONF_force_reboot,
+               do_power_cycle=do_power_cycle, boot_timeout=config.TPCONF_boot_timeout,local_dir=local_dir,
+               linux_kern_router=linux_kern_router, linux_kern_hosts=linux_kern_hosts,tftp_server=tftp_server,
+               hosts=hosts_list)
+    
+    
 
 
 ## Initialise host (TASK)
-@task
+@fabric_task
 @parallel
 def init_host():
     "Perform host initialization"
@@ -947,10 +1056,14 @@ def init_host():
         # defaults to 256 receive and 512 transmits buffer (each 1500bytes?),
         # so 3-4MB receive and 7-8MB send)
 
+@fabric_v2_task
+def init_host_v2():
+    #TODO : Implement the function
+    
 
 ## Enable/disable ECN (TASK)
 #  @param ecn If '0' disable ecn, if '1' enable ecn
-@task
+@fabric_task
 @parallel
 def init_ecn(ecn='0'):
     "Initialize whether ECN is used or not"
@@ -976,6 +1089,8 @@ def init_ecn(ecn='0'):
             run('netsh int tcp set global ecncapability=disabled', pty=False)
     else:
         abort("Can't enable/disable ECN for OS '%s'" % htype)
+
+
 
 
 # Function to replace the variable names with the values
@@ -1024,7 +1139,7 @@ def init_cc_algo_params(algo='newreno', *args, **kwargs):
 #                       OS from TPCONF_host_TCP_algos
 #  @param args Arguments (from user)
 #  @param kwargs Keyword arguments (from user)
-@task
+@fabric_task
 @parallel
 def init_cc_algo(algo='default', *args, **kwargs):
     "Initialize TCP congestion control algorithm"
@@ -1196,7 +1311,7 @@ def init_tc():
 
 
 ## Initialise the router
-@task
+@fabric_task
 @parallel
 def init_router():
     "Initialize router"
@@ -1226,7 +1341,7 @@ def init_router():
 ## Custom host initialisation
 #  @param args Arguments (from user)
 #  @param kwargs Keyword arguments (from user)
-@task
+@fabric_task
 @parallel
 def init_host_custom(*args, **kwargs):
     "Perform host custom host initialization"

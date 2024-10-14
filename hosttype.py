@@ -29,7 +29,7 @@
 #
 # $Id: hosttype.py,v e7ea179b29d8 2015/05/25 04:28:23 sebastian $
 
-from fabric2 import Connection, task as fabric_task_v2
+from fabric2 import Connection, task as fabric_v2_task
 from fabric.api import task, warn, local, run, execute, abort, hosts, hide
 
 ## Map external ips/names to OS (automatically determined)
@@ -105,7 +105,7 @@ def get_type():
 
     return htype
 
-@fabric_task_v2
+@fabric_v2_task
 def get_type_v2(c: Connection) -> str:
     """
     Get host operating system type (TASK)
