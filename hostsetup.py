@@ -1485,7 +1485,11 @@ def init_host_v2(c: Connection):
 
         # Disable offloading for each interface
         for interface in interfaces:
-            c.sudo(f'ethtool -K {interface} tso off', password="password")
+            c.sudo(f'ethtool -K {interface} tso off', config={
+                sudo: {
+                    password: "password"
+                }
+            })
             c.sudo(f'ethtool -K {interface} gso off')
             c.sudo(f'ethtool -K {interface} lro off')
             c.sudo(f'ethtool -K {interface} gro off')
