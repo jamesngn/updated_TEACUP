@@ -1523,7 +1523,7 @@ def init_host_v2(c: Connection):
         # level
         c.run('netsh int tcp set heuristics disabled', pty=False)
 
-        interfaces = get_netint_cached_v2(c, host=c.host int_no=-1)
+        interfaces = get_netint_cached_v2(c, host=c.host, int_no=-1)
 
         for interface in interfaces:
             # stop and restart interface to make the changes
