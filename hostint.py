@@ -141,7 +141,7 @@ def get_netint_cached_v2(c: Connection, host: str = '', int_no: int = 0, interna
 
     if internal_int == '1':
         if host not in host_internal_int:
-            host_internal_int[host] = []
+            host_internal_int.update({host: []})
             # Fetch the internal interfaces
             for i in range(len(config.TPCONF_host_internal_ip[host])):
                 result = get_netint_v2(c,int_no=i,internal_int='1')[c.host]
