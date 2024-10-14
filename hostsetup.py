@@ -1479,11 +1479,11 @@ def init_host_v2(c: Connection):
 
         # Disable offloading for each interface
         for interface in interfaces:
-            c.sudo(f'ethtool -K {interface} tso off')
-            c.sudo(f'ethtool -K {interface} gso off')
-            c.sudo(f'ethtool -K {interface} lro off')
-            c.sudo(f'ethtool -K {interface} gro off')
-            c.sudo('ethtool -K %s ufo off' % interface)
+            c.run(f'ethtool -K {interface} tso off')
+            c.run(f'ethtool -K {interface} gso off')
+            c.run(f'ethtool -K {interface} lro off')
+            c.run(f'ethtool -K {interface} gro off')
+            c.run('ethtool -K %s ufo off' % interface)
             
         # send and recv buffer max (set max to 2MB)
         c.run('sysctl net.core.rmem_max=2097152')
@@ -2012,31 +2012,31 @@ def init_tc_v2(c: Connection):
     for interface in interfaces:
         # run with warn_only since it will return error if no tc commands
         # exist
-        c.sudo('tc qdisc del dev %s root' % interface, warn=True)
+        c.run('tc qdisc del dev %s root' % interface, warn=True)
 
         # set root qdisc
-        c.sudo('tc qdisc add dev %s root handle 1 htb' % interface)
+        c.run('tc qdisc add dev %s root handle 1 htb' % interface)
 
     # bring up pseudo ifb interfaces (for netem)
     cnt = 0
     for interface in interfaces:
         pseudo_interface = 'ifb' + str(cnt)
 
-        c.sudo('ifconfig %s down' % pseudo_interface)
-        c.sudo('ifconfig %s up' % pseudo_interface)
+        c.run('ifconfig %s down' % pseudo_interface)
+        c.run('ifconfig %s up' % pseudo_interface)
 
         # run with warn_only since it will return error if no tc commands
         # exist
-        c.sudo('tc qdisc del dev %s root' % pseudo_interface, warn=True)
+        c.run('tc qdisc del dev %s root' % pseudo_interface, warn=True)
 
         # set root qdisc
-        c.sudo('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
+        c.run('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
 
         cnt += 1
 
-    c.sudo('iptables -t mangle -F')
+    c.run('iptables -t mangle -F')
     # this is just for counting all packets
-    c.sudo('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
+    c.run('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
 
 ## Initialise the router
 @fabric_task
@@ -2085,11 +2085,11 @@ def init_router_v2(c: Connection):
 
         # disable all offloading, e.g. tso = tcp segment offloading
         for interface in interfaces:
-            c.sudo('ethtool -K %s tso off' % interface)
-            c.sudo('ethtool -K %s gso off' % interface)
-            c.sudo('ethtool -K %s lro off' % interface)
-            c.sudo('ethtool -K %s gro off' % interface)
-            c.sudo('ethtool -K %s ufo off' % interface)
+            c.run('ethtool -K %s tso off' % interface)
+            c.run('ethtool -K %s gso off' % interface)
+            c.run('ethtool -K %s lro off' % interface)
+            c.run('ethtool -K %s gro off' % interface)
+            c.run('ethtool -K %s ufo off' % interface)
 
         init_tc_v2(c)
     else:

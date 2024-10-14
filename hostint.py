@@ -232,7 +232,7 @@ def get_netint_windump_cached_v2(c: Connection, host: str = '', int_no: int = 0,
         List[str]: Interface name(s), e.g., "1".
     """
     
-    print(f"[{c.host}]: Running get_netint_windump_cached_v2")
+    print(f"[{c.host}]: Executing get_netint_windump_cached_v2")
     
     global host_internal_windump_int, host_external_windump_int
 
@@ -244,8 +244,8 @@ def get_netint_windump_cached_v2(c: Connection, host: str = '', int_no: int = 0,
             host_internal_windump_int[host] = []
             # Fetch the internal interfaces
             for i in range(len(config.TPCONF_host_internal_ip[host])):
-                result = get_netint_v2(c,int_no=i, windump='1', internal_int='1')[c.host]
-                host_internal_windump_int[host].append(result.stdout.strip())
+                result = get_netint_v2(c,int_no=i, windump='1', internal_int='1')
+                host_internal_windump_int[host].append(result.strip())
 
         res = host_internal_windump_int.get(host, [])
 
@@ -260,8 +260,8 @@ def get_netint_windump_cached_v2(c: Connection, host: str = '', int_no: int = 0,
         if htype == 'CYGWIN' and host not in host_external_windump_int:
             host_external_windump_int[host] = []
             # Fetch the external interfaces
-            result = get_netint_v2(c,int_no=0, windump='1', internal_int='0')[c.host]
-            host_external_windump_int[host].append(result.stdout.strip())
+            result = get_netint_v2(c,int_no=0, windump='1', internal_int='0')
+            host_external_windump_int[host].append(result.strip())
 
         return host_external_windump_int.get(host, [])
 
