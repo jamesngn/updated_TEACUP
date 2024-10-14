@@ -83,6 +83,12 @@ TPCONF_test_id = now.strftime("%Y%m%d-%H%M%S") + '_scenario1'
 # Directory to store log files on remote host
 TPCONF_remote_dir = '/tmp/'
 
+TPCONF_host_os = {
+    'controlhost': 'Linux',
+    'host1': 'Linux',
+    'host2': 'Linux',
+}
+
 # Number of runs for each setting
 TPCONF_runs = 1
 
