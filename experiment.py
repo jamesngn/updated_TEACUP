@@ -456,9 +456,8 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     
 
     #TODO: add if tftpboot_dir != '' and do_init_os == '1':
-    if tftpboot_dir != '' and do_init_os == '1':
-        for host in config.all_hosts:
-            get_host_info_v2(config.hosts_connection_object[host], netint='0')
+    for host in config.all_hosts:
+        get_host_info_v2(config.hosts_connection_object[host], netint='0')
     
                 
                 
