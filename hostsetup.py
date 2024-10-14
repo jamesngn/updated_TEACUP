@@ -827,6 +827,8 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
         None
     """
     
+    all_hosts = config.TPCONF_router + config.TPCONF_hosts
+    
     # _boot_timeout = int(boot_timeout)
 
     # if _boot_timeout < 60:
@@ -859,8 +861,8 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
     #     htype = '?'
 
     # Get dictionary from host and OS lists
-    print("env all hosts: ", env.all_hosts)
-    print("env host string: ", env.host_string)
+    print("env all hosts: ", all_hosts)
+    print("env host string: ", c.host)
     # host_os = dict(zip(c.hosts, host_os_vals))
 
     # Target OS
