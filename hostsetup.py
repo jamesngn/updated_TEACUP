@@ -1056,13 +1056,14 @@ def init_host():
         # defaults to 256 receive and 512 transmits buffer (each 1500bytes?),
         # so 3-4MB receive and 7-8MB send)
 
-@fabric_v2_task
-def init_host_v2():
-    #TODO : Implement the function
+# @fabric_v2_task
+# def init_host_v2():
+#     #TODO : Implement the function
     
 
 ## Enable/disable ECN (TASK)
 #  @param ecn If '0' disable ecn, if '1' enable ecn
+    
 @fabric_task
 @parallel
 def init_ecn(ecn='0'):
