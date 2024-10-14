@@ -136,6 +136,8 @@ def get_netint_cached_v2(c: Connection, host: str = '', int_no: int = 0, interna
     print(f"[{c.host}]: Running get_netint_cached_v2")
     
     global host_internal_int, host_external_int
+    
+    print(f"[{c.host}]: host_internal_int: {host_internal_int}")
 
     if internal_int == '1':
         if host not in host_internal_int:
