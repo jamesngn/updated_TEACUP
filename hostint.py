@@ -143,7 +143,7 @@ def get_netint_cached_v2(c: Connection, int_no: int = 0, internal_int: str = '1'
             # Fetch the internal interfaces
             for i in range(len(config.TPCONF_host_internal_ip[c.host])):
                 result = get_netint_v2(c,int_no=i,internal_int='1')
-                host_internal_int[c.host].append(result.stdout.strip())
+                host_internal_int[c.host].append(result.strip())
 
         res = host_internal_int.get(c.host, [])
 
@@ -159,7 +159,7 @@ def get_netint_cached_v2(c: Connection, int_no: int = 0, internal_int: str = '1'
             host_external_int[c.host] = []
             # Fetch the external interfaces
             result = get_netint_v2(c,int_no=0,internal_int='0')
-            host_external_int[c.host].append(result.stdout.strip())
+            host_external_int[c.host].append(result.strip())
 
         return host_external_int.get(c.host, [])
 
