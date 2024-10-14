@@ -45,7 +45,8 @@ from hostmac import get_netmac_cached
 
 #UPDATED:
 from fabric2 import Connection, task as fabric_v2_task 
-
+from hosttype import get_type_cached_v2
+from invoke.exceptions import UnexpectedExit
 
 ## Get interface speed for host, if defined
 #  @param host Host name
@@ -578,10 +579,6 @@ def init_os(file_prefix='', os_list='', force_reboot='0', do_power_cycle='0',
             tftp_server='10.1.1.11:8080',
             mac_list=''):
     "Boot host with selected operating system"
-    
-    print("env all hosts: ", env.all_hosts)
-    print("env host string: ", env.host_string)
-
     _boot_timeout = int(boot_timeout)
 
     if _boot_timeout < 60:
@@ -827,50 +824,132 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
         None
     """
     
-    all_hosts = config.TPCONF_router + config.TPCONF_hosts
-    
-    # _boot_timeout = int(boot_timeout)
+    _boot_timeout = int(boot_timeout)
 
-    # if _boot_timeout < 60:
-    #     print(f"[{c.host}]: Boot timeout value too small, using 60 seconds")
-    #     _boot_timeout = 60
+    if _boot_timeout < 60:
+        print(f"[{c.host}]: Boot timeout value too small, using 60 seconds")
+        _boot_timeout = 60
 
-    # # Get OS list and split it into values
-    # host_os_vals = os_list.split(',')
-    # if len(env.all_hosts) < len(host_os_vals):
-    #     raise ValueError('Number of OSs specified must be the same as number of hosts')
+    # Get OS list and split it into values
+    host_os_vals = os_list.split(',')
+    if len(config.all_hosts) < len(host_os_vals):
+        raise ValueError('Number of OSs specified must be the same as number of hosts')
 
-    # # Adjust length if necessary
-    # while len(host_os_vals) < len(c.hosts):
-    #     host_os_vals.append(host_os_vals[-1])
+    # Adjust length if necessary
+    while len(host_os_vals) < len(all_hosts):
+        host_os_vals.append(host_os_vals[-1])
 
-    # host_mac = {} 
-    # if mac_list != '': 
-    #     mac_vals = mac_list.split(',')
-    #     if len(c.hosts) != len(mac_vals):
-    #         raise ValueError('Must specify one MAC address for each host')
+    host_mac = {} 
+    if mac_list != '': 
+        mac_vals = mac_list.split(',')
+        if len(config.all_hosts) != len(mac_vals):
+            raise ValueError('Must specify one MAC address for each host')
 
-    #     # Create a dictionary
-    #     host_mac = dict(zip(c.hosts, mac_vals))
+        # Create a dictionary
+        host_mac = dict(zip(config.all_hosts, mac_vals))
 
-    # # Get the host OS
-    # htype = get_type_cached(c)
+    # Get the host OS
+    htype = get_type_cached_v2(c)
 
-    # if not htype:
-    #     # Host not accessible, set htype to unknown
-    #     htype = '?'
+    if not htype:
+        # Host not accessible, set htype to unknown
+        htype = '?'
 
     # Get dictionary from host and OS lists
-    print("env all hosts: ", all_hosts)
-    print("env host string: ", c.host)
-    # host_os = dict(zip(c.hosts, host_os_vals))
+    host_os = dict(zip(config.all_hosts, host_os_vals))
 
     # Target OS
-    # target_os = host_os.get(c.host, '')
+    target_os = host_os.get(c.host, '')
     
-    
-    
-    
+    kern = ''
+    target_kern = ''
+    if target_os == 'Linux':
+        target_kern = linux_kern_router if c.host in config.TPCONF_router else linux_kern_hosts
+
+        if htype == 'Linux':
+            kern = c.run('uname -r').stdout.strip()
+        else:
+            kern = '?'
+
+        if target_kern in ['running', 'current']:
+            if htype == 'Linux':
+                target_kern = kern
+            else:
+                print(f"[{c.host}]: Host not running Linux, ignoring 'running' or 'current'")
+
+    # If we need to reboot or change OS
+    if target_os and (force_reboot == '1' or target_os != htype or target_kern != kern):
+        # Write PXE config file
+        pxe_template = os.path.join(config.TPCONF_script_path, 'conf-macaddr_xx:xx:xx:xx:xx:xx.ipxe.in')
+
+        # Use MAC from input or fetch from host
+        mac = host_mac.get(c.host, get_netmac_cached(c))
+        file_name = f'conf-macaddr_{mac}.ipxe'
+
+        hdd_partition = config.TPCONF_os_partition.get(target_os, {
+            'CYGWIN': '(hd0,0)',
+            'Linux': '(hd0,1)',
+            'FreeBSD': '(hd0,2)'
+        }.get(target_os, ''))
+
+        # Generate boot configuration string
+        if target_os == 'Linux':
+            config_str = f"root {hdd_partition}; kernel /boot/vmlinuz-{target_kern} splash=0 quiet showopts; initrd /boot/initrd-{target_kern}"
+        elif target_os == 'CYGWIN':
+            if c.host in config.TPCONF_router:
+                raise ValueError("Router has no Windows")
+            config_str = f"root {hdd_partition}; chainloader +1"
+        elif target_os == 'FreeBSD':
+            config_str = f"root {hdd_partition}; chainloader +1"
+        else:
+            raise ValueError(f"Unknown OS {target_os}")
+
+        print(f"[{c.host}]: Switching from OS {htype} {kern} to OS {target_os} {target_kern}")
+
+        if htype != 'Darwin':  # No PXE booting for Macs
+            local(f"cat {pxe_template} | sed -e 's/@CONFIG@/{config_str}/' | sed -e 's/@TFTPSERVER@/{tftp_server}/' > {file_name}")
+
+            # Make backup of current file if not exists yet
+            full_file_name = os.path.join(config.TPCONF_tftpboot_dir, file_name)
+            full_file_name_backup = f"{full_file_name}.bak"
+            local(f"mv -f {full_file_name} {full_file_name_backup} || true")
+            local(f"cp {file_name} {config.TPCONF_tftpboot_dir}")
+            local(f"chmod a+rw {full_file_name}")
+
+            if file_prefix:
+                file_name2 = os.path.join(local_dir, f"{file_prefix}_{file_name}")
+                local(f"mv {file_name} {file_name2}")
+
+        # Reboot the machine
+        if htype == 'Linux' or htype == 'FreeBSD':
+            c.run('shutdown -r now', pty=False)
+        elif htype == 'CYGWIN':
+            c.run('shutdown -r -t 0', pty=False)
+        else:
+            execute(power_cycle)
+
+        # Wait for reboot
+        print(f"[{c.host}]: Waiting for reboot...")
+        time.sleep(60)
+
+        # Check if machine is back up
+        for t in range(60, _boot_timeout, 10):
+            try:
+                ret = c.run(f"echo waiting for OS {target_os} to start", timeout=2, pty=False)
+                if ret.ok:
+                    break
+            except UnexpectedExit:
+                time.sleep(10)
+        
+        # Final check if OS is correct
+        htype = get_type(c)
+        kern = c.run('uname -r').stdout.strip() if target_os == 'Linux' else ''
+        if htype == target_os and kern == target_kern:
+            print(f"[{c.host}]: Host running OS {target_os} {target_kern}")
+        else:
+            raise RuntimeError(f"Error switching {c.host} to OS {target_os} {target_kern}")
+    else:
+        print(f"[{c.host}]: Leaving OS {htype} {kern} unchanged")
     
 
 ## Boot host into right kernel/OS
@@ -923,7 +1002,7 @@ def init_os_hosts(file_prefix='', local_dir='.'):
             tftp_server=tftp_server,
             hosts=hosts_list)
     
-def init_os_hosts_v2(file_prefix='', local_dir='.'):
+def init_os_hosts_v2(c:Connection, file_prefix='', local_dir='.'):
     """
     Boot hosts into the right kernel/OS using Fabric 2 and Python 3.
     
@@ -951,12 +1030,15 @@ def init_os_hosts_v2(file_prefix='', local_dir='.'):
     do_power_cycle = getattr(config, 'TPCONF_do_power_cycle', do_power_cycle)
     tftp_server = getattr(config, 'TPCONF_tftpserver', tftp_server)
     
-    init_os_v2(file_prefix, os_list=os_list_str, force_reboot=config.TPCONF_force_reboot,
-               do_power_cycle=do_power_cycle, boot_timeout=config.TPCONF_boot_timeout,local_dir=local_dir,
-               linux_kern_router=linux_kern_router, linux_kern_hosts=linux_kern_hosts,tftp_server=tftp_server,
-               hosts=hosts_list)
-    
-    
+    init_os_v2(c, 
+            file_prefix, 
+            os_list=os_list_str, 
+            force_reboot=config.TPCONF_force_reboot,
+            do_power_cycle=do_power_cycle, 
+            boot_timeout=config.TPCONF_boot_timeout,
+            local_dir=local_dir,
+            linux_kern_router=linux_kern_router, linux_kern_hosts=linux_kern_hosts,
+            tftp_server=tftp_server)
 
 
 ## Initialise host (TASK)

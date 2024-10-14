@@ -939,19 +939,14 @@ def sanity_checks_v2(c):
 
     print(f"[{c.host}]: Running sanity_checks_v2")
     
-    # Use custom config to pass passwords
-    custom_config = Config(overrides={
-        "connect_kwargs": {
-            "password": "password"
-        }
-    })
-    
+
     do_check_conn = getattr(config, "TPCONF_check_connectivity", '1') == '1'
     
-    with Connection(c.host, config=custom_config) as conn:
+    for host in config.all_hosts:
         # Create a new connection with the custom config and run the sanity checks
+        conn : Connection = config.hosts_connection_object[host];
         check_host_v2(conn)
-        
+
         if do_check_conn:
             check_connectivity_v2(conn)
         

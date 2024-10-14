@@ -70,7 +70,7 @@ from trafficgens import start_iperf, start_ping, \
     
 # UPDATED:
 from fabric2 import Connection, task as fabric_v2_task, SerialGroup, Config
-
+from hostsetup import init_os_hosts_v2
 from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2,  sanity_checks_v2, get_host_info_v2
 
 from internalutil import execute_on_group
@@ -457,8 +457,13 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
 
     #TODO: add if tftpboot_dir != '' and do_init_os == '1':
     for host in config.all_hosts:
-        get_host_info_v2(config.hosts_connection_object[host], netint='0')
-    
+        conn : Connection = config.hosts_connection_object[host]
+        get_host_info_v2(conn, netint='0')
+        init_os_hosts_v2(conn,file_prefix=test_id_pfx, local_dir=test_id_pfx, )
+
+    clear_type_cache()  # clear host type cache
+    disconnect_all()  # close all connections
+    time.sleep(30)  # give hosts some time to settle down (after reboot)
                 
                 
             
