@@ -70,7 +70,7 @@ from trafficgens import start_iperf, start_ping, \
     
 # UPDATED:
 from fabric2 import Connection, task as fabric_v2_task, SerialGroup, Config
-from hostsetup import init_os_hosts_v2, init_topology_switch_v2, init_topology_host_v2
+from hostsetup import init_host_v2, init_ecn_v2, init_cc_algo_v2, init_router_v2,init_hosts_v2, init_os_hosts_v2, init_host_custom_v2, init_topology_switch_v2, init_topology_host_v2
 from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2,  sanity_checks_v2, get_host_info_v2
 
 from internalutil import execute_on_group
@@ -458,7 +458,7 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     #TODO: add if tftpboot_dir != '' and do_init_os == '1':
     if tftpboot_dir != '' and do_init_os == '1':
         for host in config.all_hosts:
-            conn : Connection = config.hosts_connection_object[host]
+            conn : Connection = config.host_to_conn[host]
             get_host_info_v2(conn, netint='0')
             init_os_hosts_v2(conn,file_prefix=test_id_pfx, local_dir=test_id_pfx, )
 
@@ -489,13 +489,20 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
 
             # sequentially configure switch
             for host in config.TPCONF_hosts:
-                conn : Connection = config.hosts_connection_object[host]
+                conn : Connection = config.host_to_conn[host]
                 
                 init_topology_switch_v2(conn, switch, port_prefix, port_offset)
                 # configure hosts in parallel
                 init_topology_host_v2(conn)
     except AttributeError:
         pass
+    
+    file_cleanup(test_id_pfx)  # remove any .start files
+    for host in config.all_hosts:
+        conn : Connection = config.host_to_conn[host]
+        get_host_info_v2(conn, netmac='0')
+        sanity_checks_v2(conn)
+        init_hosts_v2(conn)
                 
                 
             

@@ -283,7 +283,7 @@ hostConfig = Config(overrides={
     }
 })
 
-hosts_connection_object = {
+host_to_conn = {
     'controlhost': Connection('controlhost', config=hostConfig),
     'host1': Connection('host1', config=hostConfig),
     'host2': Connection('host2', config=hostConfig),

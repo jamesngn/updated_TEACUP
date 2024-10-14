@@ -944,7 +944,7 @@ def sanity_checks_v2(c):
     
     for host in config.all_hosts:
         # Create a new connection with the custom config and run the sanity checks
-        conn : Connection = config.hosts_connection_object[host];
+        conn : Connection = config.host_to_conn[host];
         check_host_v2(conn)
 
         if do_check_conn:

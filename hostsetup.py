@@ -47,6 +47,7 @@ from hostmac import get_netmac_cached
 from fabric2 import Connection, task as fabric_v2_task 
 from invoke.exceptions import UnexpectedExit
 from hosttype import get_type_cached_v2, get_type_v2
+from hostint import get_netint_cached_v2
 from hostmac import get_netmac_cached_v2
 
 ## Get interface speed for host, if defined
@@ -619,7 +620,7 @@ def init_topology_host_v2(c: Connection):
     test_subnet = '.'.join(test_ip.split('.')[:3])
 
     # Get host type (Linux, FreeBSD, etc.)
-    htype = get_type_cached_v2(c.host)
+    htype = get_type_cached_v2(c)
     
     if htype == 'Linux':
         ethtool_options = 'autoneg on duplex full' if link_speed == 'auto' else f'autoneg off speed {link_speed} duplex full'
@@ -1435,10 +1436,105 @@ def init_host():
         # defaults to 256 receive and 512 transmits buffer (each 1500bytes?),
         # so 3-4MB receive and 7-8MB send)
 
-# @fabric_v2_task
-# def init_host_v2():
-#     #TODO : Implement the function
+@fabric_v2_task
+def init_host_v2(c: Connection):
+    """ 
+    Perform host initialization.
     
+    Args:
+        c (Connection): Fabric 2 Connection object.
+    """
+    
+    htype = get_type_cached_v2(c)
+    
+    if htype == 'FreeBSD':
+        # record the number of reassembly queue overflows
+        c.run('sysctl net.inet.tcp.reass.overflows')
+
+        # disable auto-tuning of receive buffer
+        c.run('sysctl net.inet.tcp.recvbuf_auto=0')
+
+        # disable tso
+        c.run('sysctl net.inet.tcp.tso=0')
+
+        # send and receiver buffer max (2MB by default on FreeBSD 9.2 anyway)
+        c.run('sysctl net.inet.tcp.sendbuf_max=2097152')
+        c.run('sysctl net.inet.tcp.recvbuf_max=2097152')
+
+        # clear host cache quickly, otherwise successive TCP connections will
+        # start with ssthresh and cwnd from the end of most recent tcp
+        # connections to the same host
+        c.run('sysctl net.inet.tcp.hostcache.expire=1')
+        c.run('sysctl net.inet.tcp.hostcache.prune=5')
+        c.run('sysctl net.inet.tcp.hostcache.purge=1')
+    elif htype == 'Linux':
+        # Perform Linux-specific initialization
+        
+        # disable host cache
+        c.run('sysctl net.ipv4.tcp_no_metrics_save=1')
+        # disable auto-tuning of receive buffer
+        c.run('sysctl net.ipv4.tcp_moderate_rcvbuf=0')
+
+        interfaces = get_netint_cached_v2(c, int_no=-1)
+
+        # Disable offloading for each interface
+        for interface in interfaces:
+            c.sudo(f'ethtool -K {interface} tso off')
+            c.sudo(f'ethtool -K {interface} gso off')
+            c.sudo(f'ethtool -K {interface} lro off')
+            c.sudo(f'ethtool -K {interface} gro off')
+            c.sudo('ethtool -K %s ufo off' % interface)
+            
+        # send and recv buffer max (set max to 2MB)
+        c.run('sysctl net.core.rmem_max=2097152')
+        c.run('sysctl net.core.wmem_max=2097152')
+        # tcp recv buffer max (min 4kB, default 87kB, max 6MB; this is standard
+        # on kernel 3.7)
+        c.run("sysctl net.ipv4.tcp_rmem='4096 87380 6291456'")
+        # tcp send buffer max (min 4kB, default 64kB, max 4MB; 4x the default
+        # otherwise standard values from kernel 3.7)
+        c.run("sysctl net.ipv4.tcp_wmem='4096 65535 4194304'")
+    elif htype == 'Darwin':
+        # disable tso
+        c.run('sysctl -w net.inet.tcp.tso=0')
+        # diable lro (off by default anyway)
+        c.run('sysctl -w net.inet.tcp.lro=0')
+        
+        # disable auto tuning of buffers
+        c.run('sysctl -w net.inet.tcp.doautorcvbuf=0')
+        c.run('sysctl -w net.inet.tcp.doautosndbuf=0')
+        
+        # send and receive buffer max (2MB). kern.ipc.maxsockbuf max be the sum
+        # (but is 4MB by default anyway)
+        c.run('sysctl -w kern.ipc.maxsockbuf=4194304')
+        c.run('sysctl -w net.inet.tcp.sendspace=2097152')
+        c.run('sysctl -w net.inet.tcp.recvspace=2097152')
+        
+        # set the auto receive/send buffer max to 2MB as well just in case
+        c.run('sysctl -w net.inet.tcp.autorcvbufmax=2097152')
+        c.run('sysctl -w net.inet.tcp.autosndbufmax=2097152')
+    elif htype == 'CYGWIN':
+        # disable ip/tcp/udp offload processing
+        c.run('netsh int tcp set global chimney=disabled', pty=False)
+        c.run('netsh int ip set global taskoffload=disabled', pty=False)
+        # enable tcp timestamps
+        c.run('netsh int tcp set global timestamps=enabled', pty=False)
+        # disable tcp window scaling heuristics, enforce user-set auto-tuning
+        # level
+        c.run('netsh int tcp set heuristics disabled', pty=False)
+
+        interfaces = get_netint_cached_v2(c, int_no=-1)
+
+        for interface in interfaces:
+            # stop and restart interface to make the changes
+            c.run('netsh int set int "Local Area Connection %s" disabled' %
+                interface, pty=False)
+            c.run('netsh int set int "Local Area Connection %s" enabled' %
+                interface, pty=False)
+
+        # XXX send and recv buffer max (don't know how to set this)
+        # defaults to 256 receive and 512 transmits buffer (each 1500bytes?),
+        # so 3-4MB receive and 7-8MB send) 
 
 ## Enable/disable ECN (TASK)
 #  @param ecn If '0' disable ecn, if '1' enable ecn
@@ -1470,7 +1566,39 @@ def init_ecn(ecn='0'):
     else:
         abort("Can't enable/disable ECN for OS '%s'" % htype)
 
+@fabric_v2_task
+def init_ecn_v2(c, ecn='0'):
+    """
+    Initialize whether ECN (Explicit Congestion Notification) is used or not.
+    
+    Args:
+        c (Connection): Fabric connection object representing the host.
+        ecn (str): '0' to disable ECN, '1' to enable ECN.
+    
+    Raises:
+        ValueError: If ecn is not '0' or '1'.
+    """
+    if ecn not in ['0', '1']:
+        raise ValueError("Parameter ecn must be set to '0' or '1'")
 
+    # Get type of current host
+    htype = get_type_cached(c.host)
+
+    # Enable/disable ECN depending on the OS
+    if htype == 'FreeBSD':
+        c.run(f'sysctl net.inet.tcp.ecn.enable={ecn}')
+    elif htype == 'Linux':
+        c.run(f'sysctl net.ipv4.tcp_ecn={ecn}')
+    elif htype == 'Darwin':
+        c.run(f'sysctl -w net.inet.tcp.ecn_initiate_out={ecn}')
+        c.run(f'sysctl -w net.inet.tcp.ecn_negotiate_in={ecn}')
+    elif htype == 'CYGWIN':
+        if ecn == '1':
+            c.run('netsh int tcp set global ecncapability=enabled', pty=False)
+        else:
+            c.run('netsh int tcp set global ecncapability=disabled', pty=False)
+    else:
+        raise ValueError(f"Can't enable/disable ECN for OS '{htype}'")
 
 
 # Function to replace the variable names with the values
@@ -1509,6 +1637,53 @@ def init_cc_algo_params(algo='newreno', *args, **kwargs):
                 val = eval('%s' % val)
                 # set with sysctl
                 run('sysctl %s=%s' % (sysctl_name, val))
+                
+                
+def init_cc_algo_params_v2(c: Connection, algo='newreno', *args, **kwargs):
+    """
+    Initialize TCP congestion control algorithm with specific parameters.
+
+    Args:
+        c (Connection): Fabric connection object representing the host.
+        algo (str): TCP congestion control algorithm (default is 'newreno').
+        *args: Additional arguments.
+        **kwargs: Additional keyword arguments containing the algorithm parameters.
+
+    Comments:
+        - This function retrieves the TCP algorithm parameters from the 
+          configuration for the current host and applies them using sysctl.
+        - The parameters are of the form 'sysctl_name=value'.
+        - The values may reference variables in kwargs, so we use regular 
+          expressions to substitute the variable names with their corresponding 
+          values.
+    """
+    
+    # Retrieve the host-specific TCP algorithm parameters from config
+    host_config = config.TPCONF_host_TCP_algo_params.get(c.host, None)
+    
+    if host_config is not None:
+        algo_params = host_config.get(algo, None)
+        
+        if algo_params is not None:
+            # algo_params is a list of strings of the form 'sysctl_name=value'
+            for entry in algo_params:
+                sysctl_name, val = entry.split('=')
+                sysctl_name = sysctl_name.strip()
+                val = val.strip()
+                
+                # Substitute variable names (e.g., V_* values) with actual kwargs values
+                val = re.sub(
+                    "(V_[a-zA-Z0-9_-]*)",
+                    lambda match: _param(match.group(1), kwargs),
+                    val
+                )
+                
+                # Evaluate the value (in case it's a variable name or expression)
+                val = eval('%s' % val)
+                
+                # Apply the sysctl command with the new value
+                c.run(f'sysctl {sysctl_name}={val}')
+
 
 
 ## Set congestion control algorithm (TASK)
@@ -1620,6 +1795,106 @@ def init_cc_algo(algo='default', *args, **kwargs):
     execute(init_cc_algo_params, algo=algo, *args, **kwargs)
 
 
+@fabric_v2_task
+def init_cc_algo_v2(c: Connection, algo='default', *args, **kwargs):
+    """
+    Initialize TCP congestion control algorithm for the current host.
+
+    Args:
+        c (Connection): Fabric connection object representing the host.
+        algo (str): Name of congestion control algorithm. Supported values are:
+                    newreno, cubic, cdg, hd, htcp, compound, vegas, or 'default'.
+                    Can also specify 'host<N>' where <N> is an integer.
+        *args: Additional arguments.
+        **kwargs: Keyword arguments (passed to `init_cc_algo_params`).
+    
+    Raises:
+        ValueError: If invalid algorithm or host number is provided.
+        RuntimeError: If unable to set TCP algorithm for the host OS.
+    """
+    
+    # Determine if 'algo' specifies a host-based algorithm
+    if algo.startswith('host'):
+        arr = algo.split('t')
+        if len(arr) == 2 and arr[1].isdigit():
+            num = int(arr[1])
+        else:
+            raise ValueError('If you specify host<N>, the <N> must be an integer number')
+
+        algo_list = config.TPCONF_host_TCP_algos.get(c.host, [])
+        if not algo_list:
+            raise RuntimeError(f'No TCP congestion control algos defined for host {c.host}')
+
+        if num > len(algo_list) - 1:
+            num = 0
+            print(f'No TCP congestion control algo specified for <N> = {num}, setting <N> = 0')
+
+        algo = algo_list[num]
+        print(f'Selecting TCP congestion control algorithm: {algo}')
+
+    # Validate algorithm choices
+    valid_algos = ['default', 'newreno', 'cubic', 'cdg', 'htcp', 'compound', 'hd', 'vegas']
+    if algo not in valid_algos:
+        raise ValueError(f'Invalid TCP algorithm. Available algorithms: {", ".join(valid_algos)}')
+
+    # Get the type of the current host
+    htype = get_type_cached(c)
+
+    # FreeBSD-specific handling
+    if htype == 'FreeBSD':
+        if algo in ['newreno', 'default']:
+            algo = 'newreno'
+        elif algo == 'cubic':
+            if c.run('kldstat | grep cc_cubic', warn=True).failed:
+                c.run('kldload cc_cubic')
+        elif algo == 'hd':
+            if c.run('kldstat | grep cc_hd', warn=True).failed:
+                c.run('kldload cc_hd')
+        elif algo == 'htcp':
+            if c.run('kldstat | grep cc_htcp', warn=True).failed:
+                c.run('kldload cc_htcp')
+        elif algo == 'cdg':
+            if c.run('kldstat | grep cc_cdg', warn=True).failed:
+                c.run('kldload cc_cdg')
+        elif algo == 'vegas':
+            if c.run('kldstat | grep cc_vegas', warn=True).failed:
+                c.run('kldload cc_vegas')
+        else:
+            raise RuntimeError(f"Congestion algorithm '{algo}' not supported by FreeBSD")
+
+        c.run(f'sysctl net.inet.tcp.cc.algorithm={algo}')
+
+    # Linux-specific handling
+    elif htype == 'Linux':
+        if algo == 'newreno':
+            algo = 'reno'
+        elif algo in ['cubic', 'default']:
+            algo = 'cubic'
+        elif algo == 'htcp':
+            c.run('modprobe tcp_htcp')
+        elif algo == 'vegas':
+            c.run('modprobe tcp_vegas')
+        else:
+            raise RuntimeError(f"Congestion algorithm '{algo}' not supported by Linux")
+
+        c.run(f'sysctl net.ipv4.tcp_congestion_control={algo}')
+
+    # Windows-specific handling (CYGWIN)
+    elif htype == 'CYGWIN':
+        if algo in ['newreno', 'default']:
+            c.run('netsh int tcp set global congestionprovider=none', pty=False)
+        elif algo == 'compound':
+            c.run('netsh int tcp set global congestionprovider=ctcp', pty=False)
+        else:
+            raise RuntimeError(f"Congestion algorithm '{algo}' not supported by Windows")
+
+    else:
+        raise RuntimeError(f"Can't set TCP congestion control algo for OS '{htype}'")
+
+    # Set the congestion control algorithm parameters
+    init_cc_algo_params_v2(c, algo=algo, *args, **kwargs)
+
+
 ## Initialise dummynet
 ## Assume: ipfw is running in open mode, so we can login to the machine
 def init_dummynet():
@@ -1645,6 +1920,35 @@ def init_dummynet():
     # make sure we add a final allow and enable firewall
     run('ipfw add 65534 allow ip from any to any')
     run('ipfw enable firewall')
+
+def init_dummynet_v2(c: Connection):
+    """
+    Initialize dummynet for FreeBSD.
+
+    Args:
+        c (Connection): Fabric 2 Connection object.
+    """
+    
+    ret = c.run('kldstat | grep dummynet', warn=True)
+    
+    if ret.return_code != 0:
+        # Load ipfw and dummynet kernel modules
+        c.run('kldload dummynet')
+        # Check again (just to be sure)
+        c.run('kldstat | grep dummynet')
+        
+    # Increase pipe size limit
+    c.run('sysctl net.inet.ip.dummynet.pipe_slot_limit=20000')
+    # Allow packets to go through multiple pipes
+    c.run('sysctl net.inet.ip.fw.one_pass=0')
+    # Disable firewall and flush everything
+    c.run('ipfw disable firewall')
+    c.run('ipfw -f flush')
+    c.run('ipfw -f pipe flush')
+    c.run('ipfw -f queue  flush')
+    # Add a final allow rule and enable the firewall
+    c.run('ipfw add 65534 allow ip from any to any')
+    c.run('ipfw enable firewall')
 
 
 ## Initialise Linux tc
@@ -1690,6 +1994,50 @@ def init_tc():
     sudo('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
 
 
+def init_tc_v2(c: Connection):
+    """
+    Initialize Linux tc for traffic control.
+
+    Args:
+        c (Connection): Fabric 2 Connection object.
+    """
+    
+    # load pseudo interface mdoule
+    c.run('modprobe ifb')
+
+    # get all interfaces
+    interfaces = get_netint_cached_v2(c, int_no=-1)
+
+    # delete all rules
+    for interface in interfaces:
+        # run with warn_only since it will return error if no tc commands
+        # exist
+        c.sudo('tc qdisc del dev %s root' % interface, warn=True)
+
+        # set root qdisc
+        c.sudo('tc qdisc add dev %s root handle 1 htb' % interface)
+
+    # bring up pseudo ifb interfaces (for netem)
+    cnt = 0
+    for interface in interfaces:
+        pseudo_interface = 'ifb' + str(cnt)
+
+        c.sudo('ifconfig %s down' % pseudo_interface)
+        c.sudo('ifconfig %s up' % pseudo_interface)
+
+        # run with warn_only since it will return error if no tc commands
+        # exist
+        c.sudo('tc qdisc del dev %s root' % pseudo_interface, warn=True)
+
+        # set root qdisc
+        c.sudo('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
+
+        cnt += 1
+
+    c.sudo('iptables -t mangle -F')
+    # this is just for counting all packets
+    c.sudo('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
+
 ## Initialise the router
 @fabric_task
 @parallel
@@ -1711,11 +2059,41 @@ def init_router():
             sudo('ethtool -K %s gso off' % interface)
             sudo('ethtool -K %s lro off' % interface)
             sudo('ethtool -K %s gro off' % interface)
-            #sudo('ethtool -K %s ufo off' % interface)
+            sudo('ethtool -K %s ufo off' % interface)
 
         execute(init_tc)
     else:
         abort("Router must be running FreeBSD or Linux")
+        
+@fabric_v2_task
+def init_router_v2(c: Connection):
+    """
+    Initialize the router.
+    
+    Args:
+        c (Connection): Fabric 2 Connection object.
+    """
+
+    # get type of current host
+    htype = get_type_cached_v2(c)
+
+    if htype == 'FreeBSD':
+        init_dummynet_v2(c)
+    elif htype == 'Linux':
+
+        interfaces = get_netint_cached_v2(c, int_no=-1)
+
+        # disable all offloading, e.g. tso = tcp segment offloading
+        for interface in interfaces:
+            c.sudo('ethtool -K %s tso off' % interface)
+            c.sudo('ethtool -K %s gso off' % interface)
+            c.sudo('ethtool -K %s lro off' % interface)
+            c.sudo('ethtool -K %s gro off' % interface)
+            c.sudo('ethtool -K %s ufo off' % interface)
+
+        init_tc_v2(c)
+    else:
+        raise RuntimeError("Router must be running FreeBSD or Linux")
 
 
 ## Custom host initialisation
@@ -1738,6 +2116,36 @@ def init_host_custom(*args, **kwargs):
                 cmd)
             # execute
             run(cmd)
+
+@fabric_v2_task
+def init_host_custom_v2(c: Connection, *args, **kwargs):
+    """
+    Perform custom host initialization by executing a set of commands
+    specific to each host.
+
+    Args:
+        c (Connection): Fabric connection object representing the host.
+        *args: Additional arguments (not used in this case).
+        **kwargs: Keyword arguments (may contain variable values to substitute into commands).
+    
+    Raises:
+        KeyError: If a required variable (e.g., V_* variable) is missing in kwargs.
+    """
+    
+    # Retrieve the list of custom initialization commands for the host
+    cmds = config.TPCONF_host_init_custom_cmds.get(c.host, None)
+
+    if cmds is not None:
+        for cmd in cmds:
+            # Replace V_ variables with actual values from kwargs
+            cmd = re.sub(
+                r"(V_[a-zA-Z0-9_-]*)",
+                lambda m: kwargs.get(m.group(1), f"<missing {m.group(1)}>"),
+                cmd
+            )
+            
+            # Execute the command on the remote host
+            c.run(cmd)
 
 
 ## Do all host init
@@ -1762,5 +2170,35 @@ def init_hosts(ecn='0', tcp_cc_algo='default', *args, **kwargs):
         *
         args,
         **kwargs)
+    
+def init_hosts_v2(c: Connection, ecn='0', tcp_cc_algo='default', *args, **kwargs):
+    """
+    Do all host init
+
+    Args:
+        c (Connection): Fabric 2 Connection object.
+        ecn (str, optional): ECN off if '0', ECN on if '1'. Defaults to '0'.
+        tcp_cc_algo (str, optional): TCP congestion control algo (see init_cc_algo()). Defaults to 'default'.
+        args: Arguments (from user).
+        kwargs: Keyword arguments (from user).
+    """
+    
+    for host in config.TPCONF_hosts:
+        conn : Connection = config.host_to_conn[host]
+        init_host_v2(conn)
+        init_ecn_v2(conn, ecn)
+        init_cc_algo_v2(conn, tcp_cc_algo, *args, **kwargs)
+        
+    for host in config.TPCONF_router:
+        conn : Connection = config.host_to_conn[host]
+        init_router_v2(conn)
+        
+    for host in config.all_hosts:
+        conn : Connection = config.host_to_conn[host]
+        init_host_custom_v2(conn, *args, **kwargs)
+        
+        
+
+    
 
 
