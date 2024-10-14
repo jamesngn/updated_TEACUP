@@ -119,7 +119,7 @@ def get_netint_cached(host='', int_no=0, internal_int='1'):
 
         return res
 
-def get_netint_cached_v2(c: Connection, host: str = '', int_no: int = 0, internal_int: str = '1') -> List[str]:
+def get_netint_cached_v2(c: Connection, int_no: int = 0, internal_int: str = '1') -> List[str]:
     """
     Get network interface (the first by default).
     
@@ -140,14 +140,14 @@ def get_netint_cached_v2(c: Connection, host: str = '', int_no: int = 0, interna
     print(f"[{c.host}]: host_internal_int: {host_internal_int}")
 
     if internal_int == '1':
-        if host not in host_internal_int:
-            host_internal_int.update({host: []})
+        if c.host not in host_internal_int:
+            host_internal_int.update({c.host: []})
             # Fetch the internal interfaces
-            for i in range(len(config.TPCONF_host_internal_ip[host])):
+            for i in range(len(config.TPCONF_host_internal_ip[c.host])):
                 result = get_netint_v2(c,int_no=i,internal_int='1')[c.host]
-                host_internal_int[host].append(result.stdout.strip())
+                host_internal_int[c.host].append(result.stdout.strip())
 
-        res = host_internal_int.get(host, [])
+        res = host_internal_int.get(c.host, [])
 
         if int_no == -1:
             return res
@@ -157,13 +157,13 @@ def get_netint_cached_v2(c: Connection, host: str = '', int_no: int = 0, interna
             else:
                 return ['']
     else:
-        if host not in host_external_int:
-            host_external_int[host] = []
+        if c.host not in host_external_int:
+            host_external_int[c.host] = []
             # Fetch the external interfaces
             result = get_netint_v2(c,int_no=0,internal_int='0')[c.host]
-            host_external_int[host].append(result.stdout.strip())
+            host_external_int[c.host].append(result.stdout.strip())
 
-        return host_external_int.get(host, [])
+        return host_external_int.get(c.host, [])
 
 ## Get network interface for windump (the first by default)
 ## We need this function since windump uses a differently ordered list than
