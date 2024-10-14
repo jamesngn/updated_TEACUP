@@ -1485,11 +1485,11 @@ def init_host_v2(c: Connection):
 
         # Disable offloading for each interface
         for interface in interfaces:
-            c.run(f'ethtool -K {interface} tso off')
-            c.run(f'ethtool -K {interface} gso off')
-            c.run(f'ethtool -K {interface} lro off')
-            c.run(f'ethtool -K {interface} gro off')
-            c.run('ethtool -K %s ufo off' % interface)
+            c.sudo(f'ethtool -K {interface} tso off')
+            c.sudo(f'ethtool -K {interface} gso off')
+            c.sudo(f'ethtool -K {interface} lro off')
+            c.sudo(f'ethtool -K {interface} gro off')
+            c.sudo('ethtool -K %s ufo off' % interface)
             
         # send and recv buffer max (set max to 2MB)
         c.run('sysctl net.core.rmem_max=2097152')
