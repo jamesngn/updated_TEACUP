@@ -2006,7 +2006,7 @@ def init_tc_v2(c: Connection):
     c.run('modprobe ifb')
 
     # get all interfaces
-    interfaces = get_netint_cached_v2(c, host=c.host int_no=-1)
+    interfaces = get_netint_cached_v2(c, host=c.host, int_no=-1)
 
     # delete all rules
     for interface in interfaces:
