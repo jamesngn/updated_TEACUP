@@ -913,9 +913,9 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
             # Make backup of current file if not exists yet
             full_file_name = os.path.join(config.TPCONF_tftpboot_dir, file_name)
             full_file_name_backup = f"{full_file_name}.bak"
-            c.local(f"mv -f {full_file_name} {full_file_name_backup} || true")
-            c.local(f"cp {file_name} {config.TPCONF_tftpboot_dir}")
-            c.local(f"chmod a+rw {full_file_name}")
+            c.local(f"mv -f {full_file_name} {full_file_name_backup} || true", warn=True)
+            c.local(f"cp {file_name} {config.TPCONF_tftpboot_dir}", warn=True)
+            c.local(f"chmod a+rw {full_file_name}", warn=True)
 
             if file_prefix:
                 file_name2 = os.path.join(local_dir, f"{file_prefix}_{file_name}")
@@ -923,9 +923,9 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
 
         # Reboot the machine
         if htype == 'Linux' or htype == 'FreeBSD':
-            c.run('shutdown -r now', pty=False)
+            c.run('shutdown -r now', pty=False, warn=True)
         elif htype == 'CYGWIN':
-            c.run('shutdown -r -t 0', pty=False)
+            c.run('shutdown -r -t 0', pty=False, warn=True)
         else:
             execute(power_cycle)
 
