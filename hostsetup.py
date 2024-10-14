@@ -2046,9 +2046,9 @@ def init_tc_v2(c: Connection):
 
         cnt += 1
 
-    c.run('iptables -t mangle -F')
+    c.sudo('iptables -t mangle -F')
     # this is just for counting all packets
-    c.run('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
+    c.sudo('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
 
 ## Initialise the router
 @fabric_task
@@ -2098,11 +2098,11 @@ def init_router_v2(c: Connection):
 
         # disable all offloading, e.g. tso = tcp segment offloading
         for interface in interfaces:
-            c.run('ethtool -K %s tso off' % interface)
-            c.run('ethtool -K %s gso off' % interface)
-            c.run('ethtool -K %s lro off' % interface)
-            c.run('ethtool -K %s gro off' % interface)
-            c.run('ethtool -K %s ufo off' % interface)
+            c.sudo('ethtool -K %s tso off' % interface)
+            c.sudo('ethtool -K %s gso off' % interface)
+            c.sudo('ethtool -K %s lro off' % interface)
+            c.sudo('ethtool -K %s gro off' % interface)
+            c.sudo('ethtool -K %s ufo off' % interface)
 
         init_tc_v2(c)
     else:

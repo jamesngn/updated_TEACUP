@@ -936,7 +936,6 @@ def sanity_checks_v2(c):
         None
     """
     
-
     print(f"[{c.host}]: Executing sanity_checks_v2")
     
 
