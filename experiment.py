@@ -462,9 +462,9 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
             get_host_info_v2(conn, netint='0')
             init_os_hosts_v2(conn,file_prefix=test_id_pfx, local_dir=test_id_pfx, )
 
-    clear_type_cache()  # clear host type cache
-    disconnect_all()  # close all connections
-    time.sleep(30)  # give hosts some time to settle down (after reboot)
+        clear_type_cache()  # clear host type cache
+        disconnect_all()  # close all connections
+        time.sleep(30)  # give hosts some time to settle down (after reboot)
     
     try:
         switch = '' 
