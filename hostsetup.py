@@ -230,6 +230,7 @@ def init_topology_switch_v2(c: Connection, switch='', port_prefix='', port_offse
         port_prefix (str, optional): Prefix for ports at switch. Defaults to ''.
         port_offset (str, optional): Host number to port number offset. Defaults to ''.
     """
+    print(f'[{c.host}]: Executing init_topology_switch_v2')
 
     # Fetch config if parameters are not provided
     if switch == '':
@@ -585,6 +586,7 @@ def init_topology_host_v2(c: Connection):
     Args:
         c (Connection): Fabric connection object representing the host.
     """
+    print(f'[{c.host}]: Executing init_topology_host_v2')
     
      # Validate host
     if c.host not in config.TPCONF_hosts:
@@ -763,6 +765,7 @@ def init_topology_v2(c: Connection, switch='', port_prefix='', port_offset = '')
         port_prefix (str, optional): Prefix for ports at switch. Defaults to ''.
         port_offset (str, optional): Host number to port number offset. Defaults to ''.
     """
+    print(f"[{c.host}]: Executing init_topology_v2")
     
     init_topology_switch_v2(c, switch, port_prefix, port_offset)
     init_topology_host_v2(c)
@@ -1116,6 +1119,7 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
     Returns:
         None
     """
+    print(f"[{c.host}]: Executing init_os_v2")
     
     _boot_timeout = int(boot_timeout)
 
@@ -1303,6 +1307,7 @@ def init_os_hosts_v2(c:Connection, file_prefix='', local_dir='.'):
         file_prefix (str): Prefix for generated PXE boot file (test ID prefix).
         local_dir (str): Directory to put the generated .ipxe files in.
     """
+    print(f"[{c.host}]: Executing init_os_hosts_v2")
 
     # Create a list of hosts (routers + testbed hosts)
     hosts_list = config.TPCONF_router + config.TPCONF_hosts
@@ -1444,6 +1449,7 @@ def init_host_v2(c: Connection):
     Args:
         c (Connection): Fabric 2 Connection object.
     """
+    print(f"[{c.host}]: Executing init_host_v2")
     
     htype = get_type_cached_v2(c)
     
@@ -1578,6 +1584,8 @@ def init_ecn_v2(c, ecn='0'):
     Raises:
         ValueError: If ecn is not '0' or '1'.
     """
+    print(f"[{c.host}]: Executing init_ecn_v2")
+    
     if ecn not in ['0', '1']:
         raise ValueError("Parameter ecn must be set to '0' or '1'")
 
@@ -1657,6 +1665,7 @@ def init_cc_algo_params_v2(c: Connection, algo='newreno', *args, **kwargs):
           expressions to substitute the variable names with their corresponding 
           values.
     """
+    print(f"[{c.host}]: Executing init_cc_algo_params_v2")
     
     # Retrieve the host-specific TCP algorithm parameters from config
     host_config = config.TPCONF_host_TCP_algo_params.get(c.host, None)
@@ -1812,6 +1821,7 @@ def init_cc_algo_v2(c: Connection, algo='default', *args, **kwargs):
         ValueError: If invalid algorithm or host number is provided.
         RuntimeError: If unable to set TCP algorithm for the host OS.
     """
+    print(f"[{c.host}]: Executing init_cc_algo_v2")
     
     # Determine if 'algo' specifies a host-based algorithm
     if algo.startswith('host'):
@@ -1928,6 +1938,7 @@ def init_dummynet_v2(c: Connection):
     Args:
         c (Connection): Fabric 2 Connection object.
     """
+    print(f"[{c.host}]: Executing init_dummynet_v2")
     
     ret = c.run('kldstat | grep dummynet', warn=True)
     
@@ -2001,6 +2012,7 @@ def init_tc_v2(c: Connection):
     Args:
         c (Connection): Fabric 2 Connection object.
     """
+    print(f"[{c.host}]: Executing init_tc_v2")
     
     # load pseudo interface mdoule
     c.run('modprobe ifb')
@@ -2073,6 +2085,7 @@ def init_router_v2(c: Connection):
     Args:
         c (Connection): Fabric 2 Connection object.
     """
+    print(f"[{c.host}]: Executing init_router_v2")
 
     # get type of current host
     htype = get_type_cached_v2(c)
@@ -2131,6 +2144,8 @@ def init_host_custom_v2(c: Connection, *args, **kwargs):
     Raises:
         KeyError: If a required variable (e.g., V_* variable) is missing in kwargs.
     """
+    
+    print(f"[{c.host}]: Executing init_host_custom_v2")
     
     # Retrieve the list of custom initialization commands for the host
     cmds = config.TPCONF_host_init_custom_cmds.get(c.host, None)
