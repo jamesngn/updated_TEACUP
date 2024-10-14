@@ -286,7 +286,7 @@ hostConfig = Config(overrides={
     },
     "run": {
         "echo": True,
-        "echo_format": "[{host}] {command}",
+        "echo_format": "[{c.host}] {command}",
         "warn": True,
     }
 })
