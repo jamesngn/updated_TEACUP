@@ -119,7 +119,7 @@ def get_netint_cached(host='', int_no=0, internal_int='1'):
 
         return res
 
-def get_netint_cached_v2(c: Connection, host='', int_no: int = 0, internal_int: str = '1') -> List[str]:
+def get_netint_cached_v2(c: Connection, int_no: int = 0, internal_int: str = '1') -> List[str]:
     """
     Get network interface (the first by default).
     
@@ -138,19 +138,14 @@ def get_netint_cached_v2(c: Connection, host='', int_no: int = 0, internal_int: 
     global host_internal_int, host_external_int
     
     if internal_int == '1':
-        if host not in host_internal_int:
-            host_internal_int.update({host: []})
+        if c.host not in host_internal_int:
+            host_internal_int.update({c.host: []})
             # Fetch the internal interfaces
-            for i in range(len(config.TPCONF_host_internal_ip[host])):
-                conn = config.host_to_conn[host]
-                
-                result = get_netint_v2(conn,int_no=i,internal_int='1')
-                
-                print(f"[{c.host}]: Result: {result}")
-                
-                host_internal_int[host].append(result.stdout.strip())
+            for i in range(len(config.TPCONF_host_internal_ip[c.host])):
+                result = get_netint_v2(c,int_no=i,internal_int='1')
+                host_internal_int[c.host].append(result.stdout.strip())
 
-        res = host_internal_int.get(host, [])
+        res = host_internal_int.get(c.host, [])
 
         if int_no == -1:
             return res
@@ -160,14 +155,13 @@ def get_netint_cached_v2(c: Connection, host='', int_no: int = 0, internal_int: 
             else:
                 return ['']
     else:
-        if host not in host_external_int:
-            host_external_int[host] = []
+        if c.host not in host_external_int:
+            host_external_int[c.host] = []
             # Fetch the external interfaces
-            conn : Connection = config.host_to_conn[host]
-            result = get_netint_v2(conn,int_no=0,internal_int='0')[host]
-            host_external_int[host].append(result.stdout.strip())
+            result = get_netint_v2(c,int_no=0,internal_int='0')
+            host_external_int[c.host].append(result.stdout.strip())
 
-        return host_external_int.get(host, [])
+        return host_external_int.get(c.host, [])
 
 ## Get network interface for windump (the first by default)
 ## We need this function since windump uses a differently ordered list than
@@ -238,7 +232,7 @@ def get_netint_windump_cached_v2(c: Connection, host: str = '', int_no: int = 0,
         List[str]: Interface name(s), e.g., "1".
     """
     
-    print(f"[{c.host}]: Executing get_netint_windump_cached_v2")
+    print(f"[{c.host}]: Running get_netint_windump_cached_v2")
     
     global host_internal_windump_int, host_external_windump_int
 
@@ -409,7 +403,7 @@ def get_netint_v2(c: Connection, int_no=0, windump='0', internal_int='1'):
         str: Interface name string, e.g. "em0".
     """
     
-    print(f"[{c.host}]: Executing get_netint_v2")
+    print(f"[{c.host}]: Running get_netint_v2")
     
     # Need to convert if we run task from command line
     int_no = int(int_no)
