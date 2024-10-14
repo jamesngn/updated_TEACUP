@@ -836,7 +836,7 @@ def init_os_v2(c:Connection, file_prefix='', os_list='', force_reboot='0',
         raise ValueError('Number of OSs specified must be the same as number of hosts')
 
     # Adjust length if necessary
-    while len(host_os_vals) < len(all_hosts):
+    while len(host_os_vals) < len(config.all_hosts):
         host_os_vals.append(host_os_vals[-1])
 
     host_mac = {} 
