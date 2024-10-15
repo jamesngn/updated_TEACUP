@@ -388,18 +388,18 @@ def check_host():
             run('which ethtool')
             run('which md5sum')
             run('which tcpdump')
-            #run('which web10g-listconns')
-            #run('which web10g-readvars')
-            #updated for ttprobe support
-            # try:
-            #     linux_tcp_logger = config.TPCONF_linux_tcp_logger
-            # except AttributeError:
-            #     linux_tcp_logger = 'web10g'
-            # if linux_tcp_logger == 'ttprobe' or linux_tcp_logger == 'both':
-            #     #checking the availability of ttprobe.ko kernel module
-            #     run('ls /lib/modules/$(uname -r)/extra/ttprobe.ko')
-            # if linux_tcp_logger == 'web10g' or linux_tcp_logger == 'both':
-            #     run('which web10g-logger')
+            run('which web10g-listconns')
+            run('which web10g-readvars')
+            # updated for ttprobe support
+            try:
+                linux_tcp_logger = config.TPCONF_linux_tcp_logger
+            except AttributeError:
+                linux_tcp_logger = 'web10g'
+            if linux_tcp_logger == 'ttprobe' or linux_tcp_logger == 'both':
+                #checking the availability of ttprobe.ko kernel module
+                run('ls /lib/modules/$(uname -r)/extra/ttprobe.ko')
+            if linux_tcp_logger == 'web10g' or linux_tcp_logger == 'both':
+                run('which web10g-logger')
         elif htype == 'CYGWIN':
             run('which WinDump', pty=False)
             run('which win-estats-logger', pty=False)
@@ -433,17 +433,17 @@ def check_host():
         run('which lighttpd', pty=False)
         run('which nttcp', pty=False)
 
-    # put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin')
-    # run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
-    # run('which runbg_wrapper.sh', pty=False)
+    put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin')
+    run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
+    run('which runbg_wrapper.sh', pty=False)
 
-    # put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin')
-    # run('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
-    # run('which kill_iperf.sh', pty=False)
+    put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin')
+    run('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
+    run('which kill_iperf.sh', pty=False)
 
-    # put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin')
-    # run('chmod a+x /usr/bin/pktgen.sh', pty=False)
-    # run('which pktgen.sh', pty=False)
+    put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin')
+    run('chmod a+x /usr/bin/pktgen.sh', pty=False)
+    run('which pktgen.sh', pty=False)
 
 
 @fabric_v2_task
