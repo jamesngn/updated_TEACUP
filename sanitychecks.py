@@ -941,11 +941,13 @@ def sanity_checks_v2(c):
 
     do_check_conn = getattr(config, "TPCONF_check_connectivity", '1') == '1'
     
-    group = Group("host1", "host2", "controlhost", config=config.hostConfig)
-    threadingGroup = ThreadingGroup(group)
-
-    threadingGroup.run(check_host_v2, c)
+    # Instead of creating a Group object directly, create a list of hosts
     
+    # Create a ThreadingGroup from the hosts list
+    threading_group = ThreadingGroup(*config.all_hosts, config=config.hostConfig)
+
+    for conn in threading_group:
+        conn.run(check_host_v2, c)
     
     # for host in config.all_hosts:
     #     # Create a new connection with the custom config and run the sanity checks
