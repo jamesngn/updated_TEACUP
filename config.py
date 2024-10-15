@@ -287,7 +287,7 @@ hostConfig = Config(overrides={
     },
     "sudo": {
         "password": "password",
-        "prompt":""
+        "prompt":"sudo :"
     },
     "run": {
         "echo": True,
