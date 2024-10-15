@@ -16,10 +16,20 @@ from fabric2 import Connection, Config, SerialGroup, ThreadingGroup
 #
 
 # User and password
-env.user = 'controlhost'
-env.password = 'password'
+env.user = {
+    'controlhost': 'controlhost',
+    'host1': 'host1',
+    'host2': 'host2',
+}
+
+env.password = {
+    'controlhost': 'password',
+    'host1': 'password',
+    'host2': 'password',
+}
 
 env.sudo_passwords = {
+    'controlhost': 'password',
     'host1': 'password',
     'host2': 'password'
 }
