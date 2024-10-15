@@ -279,6 +279,8 @@ TPCONF_variable_defaults = {
 # according to TPCONF_variable_defaults
 TPCONF_vary_parameters = ['delays', 'bandwidths', 'aqms', 'runs',]
 
+def dynamic_echo_format(c):
+    return f"[{c.host}]: {{command}}"
 
 # New config for fabric 2.0
 hostConfig = Config(overrides={
@@ -286,14 +288,13 @@ hostConfig = Config(overrides={
         "password": "password"
     },
     "sudo": {
-        "password": "password"
+        "password": "password",
         "prompt":""
     },
     "run": {
         "echo": True,
         "warn": True,
-        "prompt": "",
-        "echo_format": "\033[1;37m{command}\033[0m",
+        "echo_format":dynamic_echo_format
     }
 })
 
