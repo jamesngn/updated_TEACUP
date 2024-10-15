@@ -667,11 +667,6 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     puts('\n[MAIN] Running experiment for %i seconds\n' % int(total_duration))
     time.sleep(total_duration)
     
-     # wait until finished (add additional 5 seconds to be sure)
-    total_duration = float(total_duration) + 5.0
-    puts('\n[MAIN] Running experiment for %i seconds\n' % int(total_duration))
-    time.sleep(total_duration)
-
     # shut everything down and get log data
     execute(stop_processes, local_dir=test_id_pfx)
     execute(
