@@ -941,7 +941,7 @@ def sanity_checks_v2(c):
 
     do_check_conn = getattr(config, "TPCONF_check_connectivity", '1') == '1'
     
-    group = Group(*config.all_hosts, config=config.hostConfig)
+    group = Group("host1", "host2", "controlhost", config=config.hostConfig)
     threadingGroup = ThreadingGroup(group)
 
     threadingGroup.run(check_host_v2, c)
