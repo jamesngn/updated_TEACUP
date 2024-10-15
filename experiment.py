@@ -178,7 +178,6 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
             # append the host to execute (router)
             if v[-1] != ',':
                 v = v + ','
-            v = v + ' hosts = router'
 
             _nargs, _kwargs = eval('_args(%s)' % v)
             init_pipe_v2(*_nargs, **_kwargs)
