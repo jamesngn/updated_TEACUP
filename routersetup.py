@@ -217,7 +217,7 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
     # 3.14 only, for new kernels it happens automatically via tc use!)
     if queue_disc == 'pie':
         with settings(warn_only=True):
-            run('modprobe pie')
+            sudo('modprobe pie')
 
     if rate == '':
         rate = '1000mbit'
@@ -264,7 +264,7 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
         config_tc_cmd = 'tc class add dev %s parent 1: classid 1:%s htb rate %s ceil %s' % \
             (pseudo_interface, queue_class_no, rate, rate)
         if attach_to_queue == '':
-            run(config_tc_cmd)
+            sudo(config_tc_cmd)
 
         # config queuing discipline and buffer limit on pseudo interface
         config_tc_cmd = 'tc qdisc add dev %s parent 1:%s handle %s: %s limit %s %s' % \
@@ -275,19 +275,19 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
              queue_size,
              queue_disc_params)
         if attach_to_queue == '':
-            run(config_tc_cmd)
+            sudo(config_tc_cmd)
 
         # configure filter to classify traffic based on mark on pseudo device
         config_tc_cmd = 'tc filter add dev %s protocol ip parent 1: ' \
                         'handle %s fw flowid 1:%s' % (
                             pseudo_interface, class_no, queue_class_no)
-        run(config_tc_cmd)
+        sudo(config_tc_cmd)
 
         # configure class for actual interface with max rate
         config_tc_cmd = 'tc class add dev %s parent 1: classid 1:%s ' \
                         'htb rate 1000mbit ceil 1000mbit' % \
             (interface, netem_class_no)
-        run(config_tc_cmd, warn_only=True)
+        sudo(config_tc_cmd, warn_only=True)
 
         # config netem on actual interface
         config_tc_cmd = 'tc qdisc add dev %s parent 1:%s handle %s: ' \
@@ -297,7 +297,7 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
             config_tc_cmd += " delay %sms" % delay
         if loss != "":
             config_tc_cmd += " loss %s%%" % loss
-        run(config_tc_cmd, warn_only=True)
+        sudo(config_tc_cmd, warn_only=True)
 
         # configure filter to redirect traffic to pseudo device first and also
         # classify traffic based on mark after leaving the pseudo interface traffic
@@ -305,7 +305,7 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
         config_tc_cmd = 'tc filter add dev %s protocol ip parent 1: handle %s ' \
                         'fw flowid 1:%s action mirred egress redirect dev %s' % \
             (interface, class_no, netem_class_no, pseudo_interface)
-        run(config_tc_cmd)
+        sudo(config_tc_cmd)
 
         cnt += 1
 
