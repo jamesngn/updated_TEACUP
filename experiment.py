@@ -562,4 +562,135 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     
     #TODO: do function for starting all loggers
     
+    try: 
+        if config.TPCONF_bc_ping_enable == '1':
+            # for multicast need IP of outgoing interface
+            # which is router's control interface
+            use_multicast = socket.gethostbyname(
+                    config.TPCONF_router[0].split(':')[0])
+ 
+            # get configured broadcast or multicast address
+            bc_addr = '' 
+            try:
+                bc_addr = config.TPCONF_bc_ping_address
+            except AttributeError:
+                # use default multicast address
+                bc_addr = '224.0.1.199'
+            
+            #TODO: add start_bc_ping_loggers_v2
+            execute(
+                start_bc_ping_loggers,
+                file_prefix=test_id,
+                local_dir=test_id_pfx,
+                remote_dir=config.TPCONF_remote_dir,
+                bc_addr=bc_addr)
+            
+            try:
+                bc_ping_rate = config.TPCONF_bc_ping_rate
+            except AttributeError:
+                bc_ping_rate = '1'
+                
+            # start the broadcst ping on the first router
+            # TODO: add start_bc_ping_v2
+            execute(start_bc_ping,
+                file_prefix=test_id,
+                local_dir=test_id_pfx,
+                remote_dir=config.TPCONF_remote_dir,
+                bc_addr=bc_addr,
+                rate=bc_ping_rate,
+                use_multicast=use_multicast,
+                hosts = [config.TPCONF_router[0]])
+                
+    except AttributeError:
+        pass
+
+    # start traffic generators
+    sync_delay = 5.0
+    start_time = datetime.datetime.now()
+    total_duration = float(duration) + sync_delay
+    for t, c, v in sorted(config.TPCONF_traffic_gens, key=cmp_to_key(_cmp_timekeys)):
+
+        try:
+            # delay everything to have synchronised start
+            next_time = float(t) + sync_delay
+        except ValueError:
+            abort('Traffic generator entry key time must be a float')
+
+        # add the kwargs parameter to the call of _param
+        v = re.sub("(V_[a-zA-Z0-9_-]*)", "_param('\\1', kwargs)", v)
+
+        # trim white space at both ends
+        v = v.strip()
+
+        if v[-1] != ',':
+            v = v + ','
+        # add counter parameter
+        v += ' counter="%s"' % c
+        # add file prefix parameter
+        v += ', file_prefix=test_id'
+        # add remote dir
+        v += ', remote_dir=\'%s\'' % config.TPCONF_remote_dir
+        # add test id prefix to put files into correct directory
+        v += ', local_dir=\'%s\'' % test_id_pfx
+        # we don't need to check for presence of tools inside start functions
+        v += ', check="0"'
+
+        # set wait time until process is started
+        now = datetime.datetime.now()
+        dt_diff = now - start_time
+        sec_diff = (dt_diff.days * 24 * 3600 + dt_diff.seconds) + \
+            (dt_diff.microseconds / 1000000.0)
+        if next_time - sec_diff > 0:
+            wait = str(next_time - sec_diff)
+        else:
+            wait = '0.0'
+        v += ', wait="' + wait + '"'
+
+        _nargs, _kwargs = eval('_args(%s)' % v)
+
+        # get traffic generator duration
+        try:
+            traffic_duration = _kwargs ['duration']
+        except:
+            traffic_duration = 0
+        # find the largest total_duration possible
+        if next_time + traffic_duration > total_duration:
+            total_duration = next_time + traffic_duration
+
+        execute(*_nargs, **_kwargs)
+
+    # print process list
+    print_proc_list()
+    
+    # wait until finished (add additional 5 seconds to be sure)
+    total_duration = float(total_duration) + 5.0
+    puts('\n[MAIN] Running experiment for %i seconds\n' % int(total_duration))
+    time.sleep(total_duration)
+    
+     # wait until finished (add additional 5 seconds to be sure)
+    total_duration = float(total_duration) + 5.0
+    puts('\n[MAIN] Running experiment for %i seconds\n' % int(total_duration))
+    time.sleep(total_duration)
+
+    # shut everything down and get log data
+    execute(stop_processes, local_dir=test_id_pfx)
+    execute(
+        log_queue_stats,
+        file_prefix=test_id,
+        local_dir=test_id_pfx,
+        hosts=config.TPCONF_router)
+
+    # log test id in completed list
+    local('echo "%s" >> experiments_completed.txt' % test_id)
+
+    # kill any remaining processes
+    execute(kill_old_processes,
+            hosts=config.TPCONF_router +
+            config.TPCONF_hosts)
+
+    # done
+    puts('\n[MAIN] COMPLETED experiment %s \n' % test_id)
+
+    
+    
             

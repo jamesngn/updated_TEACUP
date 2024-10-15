@@ -722,20 +722,6 @@ def init_pipe_v2(c: Connection, counter='1', source='', dest='', rate='', delay=
         RuntimeError: If router is not running FreeBSD or Linux
     """
     
-    #  print all params:
-    print(f'counter: {counter}')
-    print(f'source: {source}')
-    print(f'dest: {dest}')
-    print(f'rate: {rate}')
-    print(f'delay: {delay}')
-    print(f'rtt: {rtt}')
-    print(f'loss: {loss}')
-    print(f'queue_size: {queue_size}')
-    print(f'queue_size_mult: {queue_size_mult}')
-    print(f'queue_disc: {queue_disc}')
-    print(f'queue_disc_params: {queue_disc_params}')
-    print(f'bidir: {bidir}')
-    print(f'attach_to_queue: {attach_to_queue}')
     
     # get internal addresses
     dummy, source_internal = get_address_pair_v2(host=source)
