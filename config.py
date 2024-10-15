@@ -214,15 +214,15 @@ TPCONF_loss_rates = [0]
 
 # Emulated bandwidths (downstream, upstream)
 TPCONF_bandwidths = [
-    ("8", "1"),
-    ("20", "1.4"),
+    ("8mbit", "1mbit"),
+    ("20mbit", "1.4mbit"),
 ]
 
 # AQM
 # Linux: fifo (mapped to pfifo), pfifo, bfifo, fq_codel, codel, pie, red, ...
 #        (see tc man page for full list)
 # FreeBSD: fifo, red
-TPCONF_aqms = ["pfifo", ]
+TPCONF_aqms = ['pfifo', ]
 
 # Buffer size
 # If router is Linux this is mostly in packets/slots, but it depends on AQM
@@ -277,7 +277,7 @@ TPCONF_variable_defaults = {
 
 # Specify the parameters we vary through all values, all others will be fixed
 # according to TPCONF_variable_defaults
-TPCONF_vary_parameters = ["delays", "bandwidths", "aqms", "runs",]
+TPCONF_vary_parameters = ['delays', 'bandwidths', 'aqms', 'runs',]
 
 
 # New config for fabric 2.0

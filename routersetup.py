@@ -738,11 +738,11 @@ def init_pipe_v2(c: Connection, counter='1', source='', dest='', rate='', delay=
     print(f'attach_to_queue: {attach_to_queue}')
     
     # get internal addresses
-    dummy, source_internal = get_address_pair_v2(c, host=source)
-    dummy, dest_internal = get_address_pair_v2(c, host=dest)
+    dummy, source_internal = get_address_pair_v2(host=source)
+    dummy, dest_internal = get_address_pair_v2(host=dest)
     
     # get type of current host
-    htype = get_type_cached_v2(c.host)
+    htype = get_type_cached_v2(c)
     
     if htype == 'FreeBSD':
         init_dummynet_pipe_v2(c, counter, source_internal, dest_internal, rate, delay, rtt, loss, queue_size, queue_size_mult, queue_disc, queue_disc_params, bidir)
