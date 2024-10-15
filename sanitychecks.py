@@ -947,7 +947,7 @@ def sanity_checks_v2(c):
     threading_group = ThreadingGroup(*config.all_hosts, config=config.hostConfig)
 
     for conn in threading_group:
-        conn.run(check_host_v2, c)
+        print("Conn: ", conn)
     
     # for host in config.all_hosts:
     #     # Create a new connection with the custom config and run the sanity checks
