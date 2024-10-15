@@ -2015,7 +2015,7 @@ def init_tc_v2(c: Connection):
     print(f"[{c.host}]: Executing init_tc_v2")
     
     # load pseudo interface mdoule
-    c.run('modprobe ifb')
+    c.sudo('modprobe ifb')
 
     # get all interfaces
     interfaces = get_netint_cached_v2(c, int_no=-1)
@@ -2024,25 +2024,25 @@ def init_tc_v2(c: Connection):
     for interface in interfaces:
         # run with warn_only since it will return error if no tc commands
         # exist
-        c.run('tc qdisc del dev %s root' % interface, warn=True)
+        c.sudo('tc qdisc del dev %s root' % interface, warn=True)
 
         # set root qdisc
-        c.run('tc qdisc add dev %s root handle 1 htb' % interface)
+        c.sudo('tc qdisc add dev %s root handle 1 htb' % interface)
 
     # bring up pseudo ifb interfaces (for netem)
     cnt = 0
     for interface in interfaces:
         pseudo_interface = 'ifb' + str(cnt)
 
-        c.run('ifconfig %s down' % pseudo_interface)
-        c.run('ifconfig %s up' % pseudo_interface)
+        c.sudo('ifconfig %s down' % pseudo_interface)
+        c.sudo('ifconfig %s up' % pseudo_interface)
 
         # run with warn_only since it will return error if no tc commands
         # exist
-        c.run('tc qdisc del dev %s root' % pseudo_interface, warn=True)
+        c.sudo('tc qdisc del dev %s root' % pseudo_interface, warn=True)
 
         # set root qdisc
-        c.run('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
+        c.sudo('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
 
         cnt += 1
 
