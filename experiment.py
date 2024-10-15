@@ -178,8 +178,9 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
             # Remove any trailing commas from the argument list
             if v.endswith(','):
                 v = v[:-1]  # Remove the last comma
-                # add ) at the end
-                v += ')'
+                
+            # add ) at the end
+            v += ')'
 
             # Converting the constructed string into actual arguments
             eval_args = eval(f'[{v}]')
