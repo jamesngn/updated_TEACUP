@@ -169,20 +169,16 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
             # Replace placeholders (V_* variables) in the configuration string with actual parameters from kwargs
             v = re.sub(r"(V_[a-zA-Z0-9_-]*)", lambda match: str(kwargs.get(match.group(1), '')), v)
 
-            # Ensure all non-numeric values are quoted
-            v = re.sub(r'(\w+)=([a-zA-Z_]+)', r'\1="\2"', v)
-
             # Trim whitespace at both ends of the string
             v = v.strip()
 
             # Prepend the task name (init_pipe) to the string with the counter value (c)
             v = f'init_pipe_v2(conn, "{str(c)}", {v}'
 
-            # Ensure the string ends with a comma if needed
-            if v[-1] != ',':
-                v += ','
+            # Remove any trailing commas from the argument list
+            if v.endswith(','):
+                v = v[:-1]  # Remove the last comma
 
-            # Execute the init_pipe_v2 function with the updated arguments
             # Converting the constructed string into actual arguments
             eval_args = eval(f'[{v}]')
 
