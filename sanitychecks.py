@@ -924,7 +924,7 @@ def sanity_checks():
     execute(check_time_sync, hosts=config.TPCONF_router + config.TPCONF_hosts)
     
     
-@fabric_v2_task(hosts=config.all_hosts, kwargs={'config':config.hostConfig})
+@fabric_v2_task(hosts=config.all_hosts, config=config.hostConfig)
 def sanity_checks_v2(c):
     """
     Perform all sanity checks, e.g., check for needed tools and connectivity
