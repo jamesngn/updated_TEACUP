@@ -924,7 +924,7 @@ def sanity_checks():
     execute(check_time_sync, hosts=config.TPCONF_router + config.TPCONF_hosts)
     
     
-@fabric_v2_task(hosts=config.TPCONF_router + config.TPCONF_hosts)
+@fabric_v2_task
 def sanity_checks_v2(c):
     """
     Perform all sanity checks, e.g., check for needed tools and connectivity
@@ -947,7 +947,7 @@ def sanity_checks_v2(c):
     threading_group = ThreadingGroup(*config.all_hosts, config=config.hostConfig)
 
     for conn in threading_group:
-        print("Conn: ", conn)
+        check_host_v2(conn)
     
     # for host in config.all_hosts:
     #     # Create a new connection with the custom config and run the sanity checks
