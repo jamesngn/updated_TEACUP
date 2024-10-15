@@ -159,14 +159,18 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
                        Example: ['router1.example.com', 'router2.example.com']
         kwargs (dict): Additional keyword arguments for queue configuration.
     """
-    # Establish a connection to the router host
     
+    # Iterate over each router in the list
     for router_host in router:
-        conn = config.host_to_conn[router_host]
-        
+        conn = config.host_to_conn[router_host]  # Assuming config.host_to_conn is defined elsewhere
+
+        # Iterate over the queue specifications
         for c, v in queue_spec:
             # Replace placeholders (V_* variables) in the configuration string with actual parameters from kwargs
             v = re.sub(r"(V_[a-zA-Z0-9_-]*)", lambda match: str(kwargs.get(match.group(1), '')), v)
+
+            # Ensure all non-numeric values are quoted
+            v = re.sub(r'(\w+)=([a-zA-Z_]+)', r'\1="\2"', v)
 
             # Trim whitespace at both ends of the string
             v = v.strip()
@@ -184,6 +188,7 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
 
             # Unpack arguments and call the updated function
             init_pipe_v2(conn, *eval_args)
+
 
 
 ## Run experiment
