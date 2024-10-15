@@ -162,28 +162,32 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
     
     # Iterate over each router in the list
     for router_host in router:
-        conn : Connection = config.host_to_conn[router_host]  # Assuming config.host_to_conn is defined elsewhere
+        conn = config.host_to_conn[router_host]  # Assuming config.host_to_conn is defined elsewhere
 
         # Iterate over the queue specifications
         for c, v in queue_spec:
-            # Replace variables in the queue specification with the corresponding values from kwargs
-            v = re.sub(r"(V_[a-zA-Z0-9_-]*)", lambda m: _param(m.group(1), kwargs), v)
+            # Replace placeholders (V_* variables) in the configuration string with actual parameters from kwargs
+            v = re.sub(r"(V_[a-zA-Z0-9_-]*)", lambda match: str(kwargs.get(match.group(1), '')), v)
 
-            # Trim white space at both ends
+            # Ensure all non-numeric values are quoted
+            v = re.sub(r'(\w+)=([a-zA-Z_]+)', r'\1="\2"', v)
+
+            # Trim whitespace at both ends of the string
             v = v.strip()
 
-            # Build the command string
-            command = f'init_pipe "{str(c)}", {v}'
+            # Prepend the task name (init_pipe) to the string with the counter value (c)
+            v = f'init_pipe_v2(conn, "{str(c)}", {v}'
 
-            # Add connection information for the router
-            command += f' hosts={router_host}'
+            # Ensure the string ends with a comma if needed
+            if v[-1] != ',':
+                v += ','
 
-            # Split the command string into positional arguments
-            _nargs, _kwargs = eval(f'_args({command})')
+            # Execute the init_pipe_v2 function with the updated arguments
+            # Converting the constructed string into actual arguments
+            eval_args = eval(f'[{v}]')
 
             # Unpack arguments and call the updated function
-            print("_nargs: ", _nargs)
-            print("_kwargs: ", _kwargs)
+            init_pipe_v2(conn, *eval_args)
 
 
 
