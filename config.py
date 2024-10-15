@@ -16,23 +16,11 @@ from fabric2 import Connection, Config, SerialGroup, ThreadingGroup
 #
 
 # User and password
-env.user = {
-    'controlhost': 'controlhost',
-    'host1': 'host1',
-    'host2': 'host2',
-}
+env.user = "controlhost"
 
-env.password = {
-    'controlhost': 'password',
-    'host1': 'password',
-    'host2': 'password',
-}
+env.password = "password"
 
-env.sudo_passwords = {
-    'controlhost': 'password',
-    'host1': 'password',
-    'host2': 'password'
-}
+env.hosts = ["controlhost@controlhost", "host1@host1", "host2@host2"]
 
 # Set shell used to execute commands
 env.shell = '/bin/sh -c'
