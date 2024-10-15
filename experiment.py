@@ -167,7 +167,7 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
         # Iterate over the queue specifications
         for c, v in queue_spec:
             # Replace placeholders (V_* variables) in the configuration string with actual parameters from kwargs
-            v = re.sub(r"(V_[a-zA-Z0-9_-]*)", lambda match: str(kwargs.get(match.group(1), '')), v)
+            v = re.sub("(V_[a-zA-Z0-9_-]*)", "_param('\\1', kwargs)", v)
 
             # Trim whitespace at both ends of the string
             v = v.strip()
@@ -175,18 +175,13 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
             # Prepend the task name (init_pipe) to the string with the counter value (c)
             v = f'init_pipe_v2(conn, "{str(c)}", {v}'
 
-            # Remove any trailing commas from the argument list
-            if v.endswith(','):
-                v = v[:-1]  # Remove the last comma
-                
-            # add ) at the end
-            v += ')'
+            # append the host to execute (router)
+            if v[-1] != ',':
+                v = v + ','
+            v = v + ' hosts = router'
 
-            # Converting the constructed string into actual arguments
-            eval_args = eval(f'[{v}]')
-
-            # Unpack arguments and call the updated function
-            init_pipe_v2(conn, *eval_args)
+            _nargs, _kwargs = eval('_args(%s)' % v)
+            execute(*_nargs, **_kwargs)
 
 
 
