@@ -599,7 +599,7 @@ def show_tc_setup_v2(c: Connection):
     Args:
         c (Connection): Fabric Connection object
     """
-    interfaces = get_netint_cached_v2(c.host, int_no=-1)
+    interfaces = get_netint_cached_v2(c, int_no=-1)
 
     c.run('tc -d -s qdisc show')
     cnt = 0
