@@ -100,9 +100,9 @@ TPCONF_os_partition = {
 }
 
 TPCONF_host_os = {
-    'controlhost': 'Linux',
-    'host1': 'Linux',
-    'host2': 'Linux',
+    'controlhost@controlhost': 'Linux',
+    'host1@host1': 'Linux',
+    'host2@host2': 'Linux',
 }
 
 # Number of runs for each setting
