@@ -148,39 +148,42 @@ def config_router_queues(queue_spec, router, **kwargs):
         execute(*_nargs, **_kwargs)
 
 
-def config_router_queues_v2(queue_spec, router, **kwargs):
+def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
     """
-    Configure queues on one router using the specified queue specification.
+    Configure queues on one or multiple routers using the specified queue specification.
     
     Args:
-        queue_spec (list): Queue specification from a config file, containing tuples of queue ID and parameters.
-        router (str): Router host address or hostname.
+        queue_spec (list): List of tuples, where each tuple contains a queue ID and parameters.
+                          Example: [(1, 'param1=value1, param2=value2'), (2, 'param3=value3')]
+        router (list): List of router host addresses or hostnames.
+                       Example: ['router1.example.com', 'router2.example.com']
         kwargs (dict): Additional keyword arguments for queue configuration.
-        
     """
     # Establish a connection to the router host
-    conn = config.host_to_conn[router]
     
-    for c, v in queue_spec:
-        # Replace placeholders (V_* variables) in the configuration string with actual parameters from kwargs
-        v = re.sub(r"(V_[a-zA-Z0-9_-]*)", lambda match: str(kwargs.get(match.group(1), '')), v)
+    for router_host in router:
+        conn = config.host_to_conn[router_host]
+        
+        for c, v in queue_spec:
+            # Replace placeholders (V_* variables) in the configuration string with actual parameters from kwargs
+            v = re.sub(r"(V_[a-zA-Z0-9_-]*)", lambda match: str(kwargs.get(match.group(1), '')), v)
 
-        # Trim whitespace at both ends of the string
-        v = v.strip()
+            # Trim whitespace at both ends of the string
+            v = v.strip()
 
-        # Prepend the task name (init_pipe) to the string with the counter value (c)
-        v = f'init_pipe_v2(conn, "{str(c)}", {v}'
+            # Prepend the task name (init_pipe) to the string with the counter value (c)
+            v = f'init_pipe_v2(conn, "{str(c)}", {v}'
 
-        # Ensure the string ends with a comma if needed
-        if v[-1] != ',':
-            v += ','
+            # Ensure the string ends with a comma if needed
+            if v[-1] != ',':
+                v += ','
 
-        # Execute the init_pipe_v2 function with the updated arguments
-        # Converting the constructed string into actual arguments
-        eval_args = eval(f'[{v}]')
+            # Execute the init_pipe_v2 function with the updated arguments
+            # Converting the constructed string into actual arguments
+            eval_args = eval(f'[{v}]')
 
-        # Unpack arguments and call the updated function
-        init_pipe_v2(conn, *eval_args)
+            # Unpack arguments and call the updated function
+            init_pipe_v2(conn, *eval_args)
 
 
 ## Run experiment
