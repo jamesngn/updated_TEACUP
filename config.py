@@ -45,9 +45,9 @@ TPCONF_hosts = [ 'host1', 'host2', ]
 
 # Map external IPs to internal IPs
 TPCONF_host_internal_ip = {
-    'controlhost': ['192.168.10.1', '192.168.10.1'],
+    'controlhost': ['192.168.10.1', '192.168.11.1'],
     'host1':  ['192.168.10.11'],
-    'host2':  ['192.168.10.12'],
+    'host2':  ['192.168.11.11'],
 }
 
 #
