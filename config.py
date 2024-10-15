@@ -100,9 +100,9 @@ TPCONF_os_partition = {
 }
 
 TPCONF_host_os = {
-    'controlhost@controlhost': 'Linux',
-    'host1@host1': 'Linux',
-    'host2@host2': 'Linux',
+    'controlhost': 'Linux',
+    'host1': 'Linux',
+    'host2': 'Linux',
 }
 
 TPCONF_linux_kern_router = '3.17.4-vanilla-10000hz'
