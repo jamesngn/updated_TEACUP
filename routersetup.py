@@ -632,7 +632,7 @@ def show_pipes_v2(c: Connection):
     "Show pipe setup on router"
 
     # get type of current host
-    htype = get_type_cached_v2(c.host)
+    htype = get_type_cached_v2(c)
 
     if htype == 'FreeBSD':
         show_dummynet_pipes_v2(c)
