@@ -459,10 +459,13 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
 
     #TODO: add if tftpboot_dir != '' and do_init_os == '1':
     if tftpboot_dir != '' and do_init_os == '1':
-        for host in config.all_hosts:
-            conn : Connection = config.host_to_conn[host]
-            get_host_info_v2(conn, netint='0')
-            init_os_hosts_v2(conn,file_prefix=test_id_pfx, local_dir=test_id_pfx, )
+        # for host in config.all_hosts:
+        #     conn : Connection = config.host_to_conn[host]
+        #     get_host_info_v2(conn, netint='0')
+        #     init_os_hosts_v2(conn,file_prefix=test_id_pfx, local_dir=test_id_pfx, )
+        
+        [get_host_info_v2(config.host_to_conn[host], netint='0') for host in config.all_hosts]
+        [init_os_hosts_v2(config.host_to_conn[host], file_prefix=test_id_pfx, local_dir=test_id_pfx) for host in config.all_hosts]
 
         clear_type_cache()  # clear host type cache
         disconnect_all()  # close all connections
@@ -490,22 +493,16 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
             # the command line).
 
             # sequentially configure switch
-            for host in config.TPCONF_hosts:
-                conn : Connection = config.host_to_conn[host]
-                
-                init_topology_switch_v2(conn, switch, port_prefix, port_offset)
-                # configure hosts in parallel
-                init_topology_host_v2(conn)
+            [init_topology_switch_v2(config.host_to_conn[host], switch, port_prefix, port_offset) for host in config.all_hosts]
+            # configure hosts in parallel
+            [init_topology_host_v2(config.host_to_conn[host]) for host in config.all_hosts]
     except AttributeError:
         pass
     
     file_cleanup(test_id_pfx)  # remove any .start files
-    for host in config.all_hosts:
-        conn : Connection = config.host_to_conn[host]
-        get_host_info_v2(conn, netmac='0')
-        sanity_checks_v2(conn)
-        init_hosts_v2(conn)
-        
+    [get_host_info_v2(config.host_to_conn[host], netmac='0') for host in config.all_hosts]
+    [sanity_checks_v2(config.host_to_conn[host]) for host in config.all_hosts]
+    [init_hosts_v2(config.host_to_conn[host], **kwargs) for host in config.all_hosts]        
         
     # first is the legacy case with single router and single queue definitions
     # second is the multiple router case with several routers and several queue
@@ -515,18 +512,14 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
         config_router_queues(config.TPCONF_router_queues, config.TPCONF_router, 
                              **kwargs)
         # show pipe setup
-        for host in config.TPCONF_router:
-            conn : Connection = config.host_to_conn[host]
-            show_pipes_v2(conn)
+        [show_pipes_v2(config.host_to_conn[host]) for host in config.TPCONF_router]
     elif isinstance(config.TPCONF_router_queues, dict):
         for router in config.TPCONF_router_queues.keys():
             # start queues/pipes for router r
             config_router_queues(config.TPCONF_router_queues[router], [router], 
                                  **kwargs)
             # show pipe setup
-            for host in [router]:
-                conn : Connection = config.host_to_conn[host]
-                show_pipes_v2(conn)
+            [show_pipes_v2(config.host_to_conn[host]) for host in [router]]
                 
     log_config_params_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)
     log_host_tcp_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)
