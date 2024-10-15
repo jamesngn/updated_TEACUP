@@ -44,14 +44,14 @@ sys.path.append(TPCONF_script_path)
 TPCONF_debug_level = 0
 
 # Host lists
-TPCONF_router = ['controlhost', ]
-TPCONF_hosts = [ 'host1', 'host2', ]
+TPCONF_router = ['controlhost@controlhost', ]
+TPCONF_hosts = [ 'host1@host1', 'host2@host2', ]
 
 # Map external IPs to internal IPs
 TPCONF_host_internal_ip = {
-    'controlhost': ['192.168.10.1', '192.168.11.1'],
-    'host1':  ['192.168.10.11'],
-    'host2':  ['192.168.11.11'],
+    'controlhost@controlhost': ['192.168.10.1', '192.168.11.1'],
+    'host1@host1':  ['192.168.10.11'],
+    'host2@host2':  ['192.168.11.11'],
 }
 
 #
