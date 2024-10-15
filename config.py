@@ -214,8 +214,8 @@ TPCONF_loss_rates = [0]
 
 # Emulated bandwidths (downstream, upstream)
 TPCONF_bandwidths = [
-    ('8mbit', '1mbit'),
-    ('20mbit', '1.4mbit'),
+    ("8mbit", "1mbit"),
+    ("20mbit", "1.4mbit"),
 ]
 
 # AQM
