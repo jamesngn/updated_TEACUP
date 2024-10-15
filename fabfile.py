@@ -79,19 +79,6 @@ from util import exec_cmd, authorize_key, copy_file
 from hostsetup import init_host, init_ecn, init_cc_algo, init_router, \
         init_hosts, init_os, power_cycle, init_host_custom
         
-        
-# fabric 2 task list:
-from fabric2 import Connection, task as fabric_v2_task
-from invoke.exceptions import Exit
-
-from hosttype import get_type_v2
-from hostint import get_netint_v2
-from hostmac import get_netmac_v2
-
-from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2, sanity_checks_v2, check_time_sync_v2, get_host_info_v2
-
-from hostsetup import init_os_v2, init_os_hosts_v2
-
 try:
     from hostsetup import init_topology
 except ImportError:
@@ -193,6 +180,23 @@ try:
     from analyse_owd import extract_owd, analyse_owd, analyse_pktloss, extract_pktloss
 except ImportError:
     pass
+
+
+
+# fabric 2 task list:
+from fabric2 import Connection, task as fabric_v2_task
+from invoke.exceptions import Exit
+
+from hosttype import get_type_v2
+from hostint import get_netint_v2
+from hostmac import get_netmac_v2
+
+from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2, sanity_checks_v2, check_time_sync_v2, get_host_info_v2
+
+from hostsetup import init_os_v2, init_os_hosts_v2
+
+from routersetup import init_pipe_v2, show_pipes_v2
+
 
 ## Set to zero if we don't need OS initialisation anymore
 # XXX this is a bit ugly as a global
