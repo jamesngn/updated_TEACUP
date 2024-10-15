@@ -105,6 +105,9 @@ TPCONF_host_os = {
     'host2@host2': 'Linux',
 }
 
+TPCONF_linux_kern_router = '3.17.4-vanilla-10000hz'
+TPCONF_linux_kern_hosts = '3.17.4-vanilla-web10g'
+
 # Number of runs for each setting
 TPCONF_runs = 1
 
@@ -128,10 +131,10 @@ TPCONF_runs = 1
 
 TPCONF_router_queues = [
     # Set same delay for every host
-    ('1', " source='192.168.10.0/24', dest='192.168.10.0/24', delay=V_delay, "
+    ('1', " source='192.168.10.0/24', dest='192.168.11.0/24', delay=V_delay, "
      " loss=V_loss, rate=V_up_rate, queue_disc=V_aqm, queue_size=V_bsize "),
-    #('2', " source='172.16.11.0/24', dest='172.16.10.0/24', delay=V_delay, "
-    # " loss=V_loss, rate=V_down_rate, queue_disc=V_aqm, queue_size=V_bsize "),
+    ('2', " source='192.168.11.0/24', dest='192.168.10.0/24', delay=V_delay, "
+    " loss=V_loss, rate=V_down_rate, queue_disc=V_aqm, queue_size=V_bsize "),
 ]
 
 #
@@ -155,7 +158,6 @@ traffic_iperf = [
     # Specifying external addresses traffic will be created using the _first_
     # internal addresses (according to TPCONF_host_internal_ip)
     ('0.0', '1', " start_iperf, client='host1', server='controlhost', port=5000, "
-
      " duration=V_duration "),
     ('0.0', '2', " start_iperf, client='host1', server='controlhost', port=5001, "
      " duration=V_duration "),
