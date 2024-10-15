@@ -529,5 +529,8 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
                 show_pipes_v2(conn)
                 
     log_config_params_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)
-    log_host_tcp_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)            
+    log_host_tcp_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)
+    
+    #TODO: do function for starting all loggers
+    
             

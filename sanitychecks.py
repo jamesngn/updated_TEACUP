@@ -49,7 +49,7 @@ from trafficgens import start_iperf, start_ping, \
     
 # UPDATED:
 from fabric2 import Connection, SerialGroup, task as fabric_v2_task, Config
-from fabric2.group import SerialGroup
+from fabric2.group import SerialGroup, ThreadingGroup, Group
 
 from hosttype import get_type_cached_v2
 from hostint import get_netint_cached_v2, get_netint_windump_cached_v2
@@ -941,15 +941,21 @@ def sanity_checks_v2(c):
 
     do_check_conn = getattr(config, "TPCONF_check_connectivity", '1') == '1'
     
-    for host in config.all_hosts:
-        # Create a new connection with the custom config and run the sanity checks
-        conn : Connection = config.host_to_conn[host];
-        check_host_v2(conn)
+    group = Group(*config.all_hosts, config=config.hostConfig)
+    threadingGroup = ThreadingGroup(group)
 
-        if do_check_conn:
-            check_connectivity_v2(conn)
+    threadingGroup.run(check_host_v2, c)
+    
+    
+    # for host in config.all_hosts:
+    #     # Create a new connection with the custom config and run the sanity checks
+    #     conn : Connection = config.host_to_conn[host];
+    #     check_host_v2(conn)
+
+    #     if do_check_conn:
+    #         check_connectivity_v2(conn)
         
-        kill_old_processes_v2(conn)
-        check_time_sync_v2(conn)
+    #     kill_old_processes_v2(conn)
+    #     check_time_sync_v2(conn)
     
     print(f"[MAIN]: Sanity checks completed")

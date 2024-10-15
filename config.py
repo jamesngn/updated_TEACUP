@@ -8,7 +8,7 @@ import datetime
 from fabric.api import env
 
 # Updated
-from fabric2 import Connection, Config, SerialGroup
+from fabric2 import Connection, Config, SerialGroup, ThreadingGroup
 
 
 #
@@ -287,6 +287,8 @@ hostConfig = Config(overrides={
     "run": {
         "echo": True,
         "warn": True,
+        "prompt": "",
+        "echo_format": "\033[1;37m{command}\033[0m",
     }
 })
 
