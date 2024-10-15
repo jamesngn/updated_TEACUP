@@ -22,7 +22,11 @@ env.password = "password"
 
 env.hosts = ["controlhost@controlhost", "host1@host1", "host2@host2"]
 
-env.sudo_passwords = "password"
+env.sudo_passwords = {
+    "controlhost@controlhost": "password",
+    "host1@host1": "password",
+    "host2@host2": "password",
+}
 
 # Set shell used to execute commands
 env.shell = '/bin/sh -c'
