@@ -20,8 +20,6 @@ env.user = "controlhost"
 
 env.password = "password"
 
-env.hosts = ["controlhost", "host1", "host2"]
-
 env.sudo_passwords = {
     "controlhost": "password",
     "host1": "password",
