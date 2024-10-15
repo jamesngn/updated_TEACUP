@@ -611,11 +611,11 @@ def get_address_pair_v2(host: str, do_abort: bool = True) -> tuple:
         tuple: A tuple containing the external address and internal address.
     """
     # Get the internal IP address
-    internal = get_internal_ip(host)
+    internal = get_internal_ip_v2(host)
     
     # Determine the external address
     if internal == host:
-        external = get_external_ip(host, do_abort)
+        external = get_external_ip_v2(host, do_abort)
     else:
         external = host
 

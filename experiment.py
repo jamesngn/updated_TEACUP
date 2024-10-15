@@ -73,7 +73,7 @@ from fabric2 import Connection, task as fabric_v2_task, SerialGroup, Config
 from hostsetup import init_host_v2, init_ecn_v2, init_cc_algo_v2, init_router_v2,init_hosts_v2, init_os_hosts_v2, init_host_custom_v2, init_topology_switch_v2, init_topology_host_v2
 from loggers import log_config_params_v2, log_host_tcp_v2
 from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2,  sanity_checks_v2, get_host_info_v2
-from routersetup import show_pipes_v2
+from routersetup import init_pipe_v2, show_pipes_v2
 
 from internalutil import execute_on_group
 
@@ -146,6 +146,41 @@ def config_router_queues(queue_spec, router, **kwargs):
 
         _nargs, _kwargs = eval('_args(%s)' % v)
         execute(*_nargs, **_kwargs)
+
+
+def config_router_queues_v2(queue_spec, router, **kwargs):
+    """
+    Configure queues on one router using the specified queue specification.
+    
+    Args:
+        queue_spec (list): Queue specification from a config file, containing tuples of queue ID and parameters.
+        router (str): Router host address or hostname.
+        kwargs (dict): Additional keyword arguments for queue configuration.
+        
+    """
+    # Establish a connection to the router host
+    conn = config.host_to_conn[router]
+    
+    for c, v in queue_spec:
+        # Replace placeholders (V_* variables) in the configuration string with actual parameters from kwargs
+        v = re.sub(r"(V_[a-zA-Z0-9_-]*)", lambda match: str(kwargs.get(match.group(1), '')), v)
+
+        # Trim whitespace at both ends of the string
+        v = v.strip()
+
+        # Prepend the task name (init_pipe) to the string with the counter value (c)
+        v = f'init_pipe_v2(conn, "{str(c)}", {v}'
+
+        # Ensure the string ends with a comma if needed
+        if v[-1] != ',':
+            v += ','
+
+        # Execute the init_pipe_v2 function with the updated arguments
+        # Converting the constructed string into actual arguments
+        eval_args = eval(f'[{v}]')
+
+        # Unpack arguments and call the updated function
+        init_pipe_v2(conn, *eval_args)
 
 
 ## Run experiment
@@ -509,14 +544,14 @@ def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
     # definitions
     if isinstance(config.TPCONF_router_queues, list):
         # start queues/pipes
-        config_router_queues(config.TPCONF_router_queues, config.TPCONF_router, 
+        config_router_queues_v2(config.TPCONF_router_queues, config.TPCONF_router, 
                              **kwargs)
         # show pipe setup
         [show_pipes_v2(config.host_to_conn[host]) for host in config.TPCONF_router]
     elif isinstance(config.TPCONF_router_queues, dict):
         for router in config.TPCONF_router_queues.keys():
             # start queues/pipes for router r
-            config_router_queues(config.TPCONF_router_queues[router], [router], 
+            config_router_queues_v2(config.TPCONF_router_queues[router], [router], 
                                  **kwargs)
             # show pipe setup
             [show_pipes_v2(config.host_to_conn[host]) for host in [router]]
