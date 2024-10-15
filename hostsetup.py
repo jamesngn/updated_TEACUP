@@ -2071,7 +2071,7 @@ def init_router():
             sudo('ethtool -K %s gso off' % interface)
             sudo('ethtool -K %s lro off' % interface)
             sudo('ethtool -K %s gro off' % interface)
-            sudo('ethtool -K %s ufo off' % interface)
+            # sudo('ethtool -K %s ufo off' % interface)
 
         execute(init_tc)
     else:
