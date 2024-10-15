@@ -173,7 +173,7 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
             v = v.strip()
 
             # Prepend the task name (init_pipe) to the string with the counter value (c)
-            v = f'init_pipe_v2(conn, "{str(c)}", {v}'
+            v = f'conn, "{str(c)}", {v}'
 
             # append the host to execute (router)
             if v[-1] != ',':
@@ -181,7 +181,7 @@ def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
             v = v + ' hosts = router'
 
             _nargs, _kwargs = eval('_args(%s)' % v)
-            execute(*_nargs, **_kwargs)
+            init_pipe_v2(*_nargs, **_kwargs)
 
 
 
