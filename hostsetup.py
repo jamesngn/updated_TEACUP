@@ -1967,7 +1967,7 @@ def init_dummynet_v2(c: Connection):
 def init_tc():
 
     # load pseudo interface mdoule
-    run('modprobe ifb')
+    sudo('modprobe ifb')
 
     # get all interfaces
     interfaces = get_netint_cached(env.host_string, int_no=-1)
