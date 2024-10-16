@@ -310,11 +310,11 @@ def run_experiment(test_id='', test_id_pfx='', *args, **kwargs):
         **kwargs)
 
     # start all loggers
-    # execute(
-    #     start_loggers,
-    #     file_prefix=test_id,
-    #     local_dir=test_id_pfx,
-    #     remote_dir=config.TPCONF_remote_dir)
+    execute(
+        start_loggers,
+        file_prefix=test_id,
+        local_dir=test_id_pfx,
+        remote_dir=config.TPCONF_remote_dir)
 
     # Start broadcast ping and loggers (if enabled)
     try: 
