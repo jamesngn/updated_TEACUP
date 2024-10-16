@@ -23,7 +23,7 @@ env.password = "password"
 env.sudo_passwords = {
     "controlhost": "password",
     "host1": "password",
-    "host2": "password",
+    "host4": "password",
 }
 
 # Set shell used to execute commands
@@ -43,13 +43,13 @@ TPCONF_debug_level = 0
 
 # Host lists
 TPCONF_router = ['controlhost', ]
-TPCONF_hosts = [ 'host1', 'host2', ]
+TPCONF_hosts = [ 'host1', 'host4', ]
 
 # Map external IPs to internal IPs
 TPCONF_host_internal_ip = {
-    'controlhost': ['192.168.10.1', '192.168.11.1'],
-    'host1':  ['192.168.10.11'],
-    'host2':  ['192.168.11.11'],
+    'controlhost': ['172.16.10.1', '172.16.11.1'],
+    'host1':  ['172.16.10.2'],
+    'host4':  ['172.16.11.2'],
 }
 
 #
@@ -60,7 +60,7 @@ TPCONF_host_internal_ip = {
 # Experiment settings
 #
 
-TPCONF_linux_tcp_logger = 'web10g'
+TPCONF_linux_tcp_logger = 'ttprobe'
 
 # Time offset measurement options
 # Enable broadcast ping on external/control interfaces
@@ -100,7 +100,7 @@ TPCONF_os_partition = {
 TPCONF_host_os = {
     'controlhost': 'Linux',
     'host1': 'Linux',
-    'host2': 'Linux',
+    'host4': 'Linux',
 }
 
 TPCONF_linux_kern_router = '3.17.4-vanilla-10000hz'
@@ -128,11 +128,11 @@ TPCONF_runs = 1
 # is no CoDel on FreeBSD; otherwise the experiment will abort witn an error.
 
 TPCONF_router_queues = [
-    # Set same delay for every host
-    ('1', " source='192.168.10.0/24', dest='192.168.11.0/24', delay=V_delay, "
+    #   Set same delay for every host
+    ('1', " source='172.16.10.0/24', dest='172.16.11.0/24', delay=V_delay, "
      " loss=V_loss, rate=V_up_rate, queue_disc=V_aqm, queue_size=V_bsize "),
-    ('2', " source='192.168.11.0/24', dest='192.168.10.0/24', delay=V_delay, "
-    " loss=V_loss, rate=V_down_rate, queue_disc=V_aqm, queue_size=V_bsize "),
+    ('2', " source='172.16.11.0/24', dest='172.16.10.0/24', delay=V_delay, "
+     " loss=V_loss, rate=V_down_rate, queue_disc=V_aqm, queue_size=V_bsize "),
 ]
 
 #
@@ -155,9 +155,13 @@ TPCONF_router_queues = [
 traffic_iperf = [
     # Specifying external addresses traffic will be created using the _first_
     # internal addresses (according to TPCONF_host_internal_ip)
-    ('0.0', '1', " start_iperf, client='host1', server='controlhost', port=5000, "
+    ('0.0', '1', " start_iperf, client='host1', server='host4', port=5000, "
      " duration=V_duration "),
-    ('0.0', '2', " start_iperf, client='host1', server='controlhost', port=5001, "
+    ('0.0', '2', " start_iperf, client='host1', server='host4', port=5001, "
+     " duration=V_duration "),
+    ('0.0', '3', " start_iperf, client='host4', server='host1', port=5000, "
+     " duration=V_duration "),
+    ('0.0', '4', " start_iperf, client='host4', server='host1', port=5001, "
      " duration=V_duration "),
     # Or using internal addresses
     #( '0.0', '1', " start_iperf, client='192.168.10.11', server='192.168.10.12', "
@@ -298,7 +302,7 @@ hostConfig = Config(overrides={
 host_to_conn = {
     'controlhost': Connection('controlhost', config=hostConfig),
     'host1': Connection('host1', config=hostConfig),
-    'host2': Connection('host2', config=hostConfig),
+    'host4': Connection('host4', config=hostConfig),
 }
 
 all_hosts = TPCONF_router + TPCONF_hosts
