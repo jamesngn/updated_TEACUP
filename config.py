@@ -22,7 +22,7 @@ env.password = "password"
 
 env.sudo_passwords = {
     "controlhost": "password",
-    "host2": "password",
+    # "host2": "password",
     "host4": "password",
 }
 
@@ -43,12 +43,12 @@ TPCONF_debug_level = 0
 
 # Host lists
 TPCONF_router = ['router', ]
-TPCONF_hosts = [ 'host2', 'host4', ]
+TPCONF_hosts = [ 'host4', ]
 
 # Map external IPs to internal IPs
 TPCONF_host_internal_ip = {
     'router': ['172.16.10.1', '172.16.11.1'],
-    'host2':  ['172.16.10.3'],
+    # 'host2':  ['172.16.10.3'],
     'host4':  ['172.16.11.2'],
 }
 
@@ -99,7 +99,7 @@ TPCONF_os_partition = {
 
 TPCONF_host_os = {
     'router': 'Linux',
-    'host2': 'Linux',
+    # 'host2': 'Linux',
     'host4': 'Linux',
 }
 
@@ -155,14 +155,14 @@ TPCONF_router_queues = [
 traffic_iperf = [
     # Specifying external addresses traffic will be created using the _first_
     # internal addresses (according to TPCONF_host_internal_ip)
-    ('0.0', '1', " start_iperf, client='host2', server='host4', port=5000, "
-     " duration=V_duration "),
-    ('0.0', '2', " start_iperf, client='host2', server='host4', port=5001, "
-     " duration=V_duration "),
-    ('0.0', '3', " start_iperf, client='host4', server='host2', port=5000, "
-     " duration=V_duration "),
-    ('0.0', '4', " start_iperf, client='host4', server='host2', port=5001, "
-     " duration=V_duration "),
+    # ('0.0', '1', " start_iperf, client='host2', server='host4', port=5000, "
+    #  " duration=V_duration "),
+    # ('0.0', '2', " start_iperf, client='host2', server='host4', port=5001, "
+    #  " duration=V_duration "),
+    # ('0.0', '3', " start_iperf, client='host4', server='host2', port=5000, "
+    #  " duration=V_duration "),
+    # ('0.0', '4', " start_iperf, client='host4', server='host2', port=5001, "
+    #  " duration=V_duration "),
     # Or using internal addresses
     #( '0.0', '1', " start_iperf, client='192.168.10.11', server='192.168.10.12', "
     #              " port=5000, duration=V_duration " ),
@@ -301,7 +301,7 @@ hostConfig = Config(overrides={
 
 host_to_conn = {
     'controlhost': Connection('controlhost', config=hostConfig),
-    'host2': Connection('host2', config=hostConfig),
+    # 'host2': Connection('host2', config=hostConfig),
     'host4': Connection('host4', config=hostConfig),
 }
 
