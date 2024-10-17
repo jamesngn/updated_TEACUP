@@ -16,7 +16,7 @@ from fabric2 import Connection, Config, SerialGroup, ThreadingGroup
 #
 
 # User and password
-env.user = "controlhost"
+env.user = "root"
 
 env.password = "password"
 
