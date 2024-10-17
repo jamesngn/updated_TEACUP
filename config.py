@@ -61,6 +61,7 @@ TPCONF_host_internal_ip = {
 #
 
 TPCONF_linux_tcp_logger = 'ttprobe'
+TPCONF_ttprobe_output_mode= '0'
 
 # Time offset measurement options
 # Enable broadcast ping on external/control interfaces
