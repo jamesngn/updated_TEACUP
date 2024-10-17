@@ -35,7 +35,7 @@ import re
 import datetime
 import config
 from fabric.api import task as fabric_task, warn, local, run, execute, abort, hosts, \
-    env, settings, parallel, serial, puts, put, sudo
+    env, settings, parallel, serial, puts, put, run
 from hosttype import get_type_cached
 from hostint import get_netint_cached, get_netint_windump_cached
 from hostmac import get_netmac_cached
@@ -433,17 +433,17 @@ def check_host():
         run('which lighttpd', pty=False)
         run('which nttcp', pty=False)
 
-    put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin', use_sudo=True)
-    sudo('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
-    sudo('which runbg_wrapper.sh', pty=False)
+    put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin', use_run=True)
+    run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
+    run('which runbg_wrapper.sh', pty=False)
 
-    put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin',use_sudo=True)
-    sudo('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
-    sudo('which kill_iperf.sh', pty=False)
+    put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin',use_run=True)
+    run('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
+    run('which kill_iperf.sh', pty=False)
 
-    put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin',use_sudo=True)
-    sudo('chmod a+x /usr/bin/pktgen.sh', pty=False)
-    sudo('which pktgen.sh', pty=False)
+    put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin',use_run=True)
+    run('chmod a+x /usr/bin/pktgen.sh', pty=False)
+    run('which pktgen.sh', pty=False)
 
 
 @fabric_v2_task

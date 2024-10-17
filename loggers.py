@@ -33,7 +33,7 @@ import re
 import time
 import socket
 from fabric.api import task, warn, local, run, execute, abort, hosts, env, \
-    settings, parallel, serial, put, sudo
+    settings, parallel, serial, put, run
 import bgproc
 import config
 from hosttype import get_type_cached
@@ -845,10 +845,10 @@ def start_tcp_logger(file_prefix='', remote_dir='', local_dir='.'):
 
             # ttprobe - start_tcp_logger code
             with settings(warn_only=True):
-                sudo('rmmod ttprobe')
+                run('rmmod ttprobe')
 
             # start new_tcp_probe kernel module
-            sudo('modprobe ttprobe port=0 full=1 bufsize=16384 omode=%s direction=%s' %
+            run('modprobe ttprobe port=0 full=1 bufsize=16384 omode=%s direction=%s' %
             (ttprobe_output_mode, ttprobe_direction))
 
             logfile = remote_dir + file_prefix + '_' + \
@@ -1039,11 +1039,11 @@ def stop_tcp_logger(file_prefix='', remote_dir='', local_dir='.'):
 
         if linux_tcp_logger == 'ttprobe' or linux_tcp_logger == 'both':
             # flush ttprobe module buffer
-            sudo('echo flush > /proc/net/ttprobe')
+            run('echo flush > /proc/net/ttprobe')
             time.sleep(0.5)
-            sudo('echo finish > /proc/net/ttprobe')
+            run('echo finish > /proc/net/ttprobe')
             #run('pkill -f "cat /proc/net/ttprobe"')
-            sudo('rmmod ttprobe')
+            run('rmmod ttprobe')
             logfile = file_prefix + '_' + \
                 env.host_string.replace(':', '_') + '_ttprobe.log'
         # complete other tasks and exit from this function because ttprobe has differnt bgproce

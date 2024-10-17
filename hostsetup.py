@@ -37,7 +37,7 @@ import string
 import pexpect # must use version 3.2, version 3.3 does not work
 import config
 from fabric.api import reboot, task as fabric_task, warn, local, puts, run, execute, abort, \
-    hosts, env, settings, parallel, put, runs_once, hide, sudo
+    hosts, env, settings, parallel, put, runs_once, hide, run
 from fabric.exceptions import NetworkError
 from hosttype import get_type_cached, get_type
 from hostint import get_netint_cached
@@ -1380,11 +1380,11 @@ def init_host():
         
         # disable all offloading, e.g. tso = tcp segment offloading
         for interface in interfaces:
-            sudo('ethtool -K %s tso off' % interface)
-            sudo('ethtool -K %s gso off' % interface)
-            sudo('ethtool -K %s lro off' % interface)
-            sudo('ethtool -K %s gro off' % interface)
-            #sudo('ethtool -K %s ufo off' % interface)
+            run('ethtool -K %s tso off' % interface)
+            run('ethtool -K %s gso off' % interface)
+            run('ethtool -K %s lro off' % interface)
+            run('ethtool -K %s gro off' % interface)
+            #run('ethtool -K %s ufo off' % interface)
         
         # send and recv buffer max (set max to 2MB)
         run('sysctl net.core.rmem_max=2097152')
@@ -1485,57 +1485,57 @@ def init_host_v2(c: Connection):
 
         # Disable offloading for each interface
         for interface in interfaces:
-            c.sudo(f'ethtool -K {interface} tso off')
-            c.sudo(f'ethtool -K {interface} gso off')
-            c.sudo(f'ethtool -K {interface} lro off')
-            c.sudo(f'ethtool -K {interface} gro off')
-            c.sudo(f'ethtool -K {interface} ufo off')
+            c.run(f'ethtool -K {interface} tso off')
+            c.run(f'ethtool -K {interface} gso off')
+            c.run(f'ethtool -K {interface} lro off')
+            c.run(f'ethtool -K {interface} gro off')
+            c.run(f'ethtool -K {interface} ufo off')
             
         # send and recv buffer max (set max to 2MB)
-        c.sudo('sysctl net.core.rmem_max=2097152')
-        c.sudo('sysctl net.core.wmem_max=2097152')
+        c.run('sysctl net.core.rmem_max=2097152')
+        c.run('sysctl net.core.wmem_max=2097152')
         # tcp recv buffer max (min 4kB, default 87kB, max 6MB; this is standard
         # on kernel 3.7)
-        c.sudo("sysctl net.ipv4.tcp_rmem='4096 87380 6291456'")
+        c.run("sysctl net.ipv4.tcp_rmem='4096 87380 6291456'")
         # tcp send buffer max (min 4kB, default 64kB, max 4MB; 4x the default
         # otherwise standard values from kernel 3.7)
-        c.sudo("sysctl net.ipv4.tcp_wmem='4096 65535 4194304'")
+        c.run("sysctl net.ipv4.tcp_wmem='4096 65535 4194304'")
     elif htype == 'Darwin':
         # disable tso
-        c.sudo('sysctl -w net.inet.tcp.tso=0')
+        c.run('sysctl -w net.inet.tcp.tso=0')
         # diable lro (off by default anyway)
-        c.sudo('sysctl -w net.inet.tcp.lro=0')
+        c.run('sysctl -w net.inet.tcp.lro=0')
         
         # disable auto tuning of buffers
-        c.sudo('sysctl -w net.inet.tcp.doautorcvbuf=0')
-        c.sudo('sysctl -w net.inet.tcp.doautosndbuf=0')
+        c.run('sysctl -w net.inet.tcp.doautorcvbuf=0')
+        c.run('sysctl -w net.inet.tcp.doautosndbuf=0')
         
         # send and receive buffer max (2MB). kern.ipc.maxsockbuf max be the sum
         # (but is 4MB by default anyway)
-        c.sudo('sysctl -w kern.ipc.maxsockbuf=4194304')
-        c.sudo('sysctl -w net.inet.tcp.sendspace=2097152')
-        c.sudo('sysctl -w net.inet.tcp.recvspace=2097152')
+        c.run('sysctl -w kern.ipc.maxsockbuf=4194304')
+        c.run('sysctl -w net.inet.tcp.sendspace=2097152')
+        c.run('sysctl -w net.inet.tcp.recvspace=2097152')
         
         # set the auto receive/send buffer max to 2MB as well just in case
-        c.sudo('sysctl -w net.inet.tcp.autorcvbufmax=2097152')
-        c.sudo('sysctl -w net.inet.tcp.autosndbufmax=2097152')
+        c.run('sysctl -w net.inet.tcp.autorcvbufmax=2097152')
+        c.run('sysctl -w net.inet.tcp.autosndbufmax=2097152')
     elif htype == 'CYGWIN':
         # disable ip/tcp/udp offload processing
-        c.sudo('netsh int tcp set global chimney=disabled', pty=False)
-        c.sudo('netsh int ip set global taskoffload=disabled', pty=False)
+        c.run('netsh int tcp set global chimney=disabled', pty=False)
+        c.run('netsh int ip set global taskoffload=disabled', pty=False)
         # enable tcp timestamps
-        c.sudo('netsh int tcp set global timestamps=enabled', pty=False)
+        c.run('netsh int tcp set global timestamps=enabled', pty=False)
         # disable tcp window scaling heuristics, enforce user-set auto-tuning
         # level
-        c.sudo('netsh int tcp set heuristics disabled', pty=False)
+        c.run('netsh int tcp set heuristics disabled', pty=False)
 
         interfaces = get_netint_cached_v2(c, int_no=-1)
 
         for interface in interfaces:
             # stop and restart interface to make the changes
-            c.sudo('netsh int set int "Local Area Connection %s" disabled' %
+            c.run('netsh int set int "Local Area Connection %s" disabled' %
                 interface, pty=False)
-            c.sudo('netsh int set int "Local Area Connection %s" enabled' %
+            c.run('netsh int set int "Local Area Connection %s" enabled' %
                 interface, pty=False)
 
         # XXX send and recv buffer max (don't know how to set this)
@@ -1594,17 +1594,17 @@ def init_ecn_v2(c: Connection, ecn='0'):
 
     # Enable/disable ECN depending on the OS
     if htype == 'FreeBSD':
-        c.sudo(f'sysctl net.inet.tcp.ecn.enable={ecn}')
+        c.run(f'sysctl net.inet.tcp.ecn.enable={ecn}')
     elif htype == 'Linux':
-        c.sudo(f'sysctl net.ipv4.tcp_ecn={ecn}')
+        c.run(f'sysctl net.ipv4.tcp_ecn={ecn}')
     elif htype == 'Darwin':
-        c.sudo(f'sysctl -w net.inet.tcp.ecn_initiate_out={ecn}')
-        c.sudo(f'sysctl -w net.inet.tcp.ecn_negotiate_in={ecn}')
+        c.run(f'sysctl -w net.inet.tcp.ecn_initiate_out={ecn}')
+        c.run(f'sysctl -w net.inet.tcp.ecn_negotiate_in={ecn}')
     elif htype == 'CYGWIN':
         if ecn == '1':
-            c.sudo('netsh int tcp set global ecncapability=enabled', pty=False)
+            c.run('netsh int tcp set global ecncapability=enabled', pty=False)
         else:
-            c.sudo('netsh int tcp set global ecncapability=disabled', pty=False)
+            c.run('netsh int tcp set global ecncapability=disabled', pty=False)
     else:
         raise ValueError(f"Can't enable/disable ECN for OS '{htype}'")
 
@@ -1967,7 +1967,7 @@ def init_dummynet_v2(c: Connection):
 def init_tc():
 
     # load pseudo interface mdoule
-    sudo('modprobe ifb')
+    run('modprobe ifb')
 
     # get all interfaces
     interfaces = get_netint_cached(env.host_string, int_no=-1)
@@ -1977,32 +1977,32 @@ def init_tc():
         with settings(warn_only=True):
             # run with warn_only since it will return error if no tc commands
             # exist
-            sudo('tc qdisc del dev %s root' % interface)
+            run('tc qdisc del dev %s root' % interface)
 
         # set root qdisc
-        sudo('tc qdisc add dev %s root handle 1 htb' % interface)
+        run('tc qdisc add dev %s root handle 1 htb' % interface)
 
     # bring up pseudo ifb interfaces (for netem)
     cnt = 0
     for interface in interfaces:
         pseudo_interface = 'ifb' + str(cnt)
 
-        sudo('ifconfig %s down' % pseudo_interface)
-        sudo('ifconfig %s up' % pseudo_interface)
+        run('ifconfig %s down' % pseudo_interface)
+        run('ifconfig %s up' % pseudo_interface)
 
         with settings(warn_only=True):
             # run with warn_only since it will return error if no tc commands
             # exist
-            sudo('tc qdisc del dev %s root' % pseudo_interface)
+            run('tc qdisc del dev %s root' % pseudo_interface)
 
         # set root qdisc
-        sudo('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
+        run('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
 
         cnt += 1
 
-    sudo('iptables -t mangle -F')
+    run('iptables -t mangle -F')
     # this is just for counting all packets
-    sudo('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
+    run('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
 
 
 def init_tc_v2(c: Connection):
@@ -2015,7 +2015,7 @@ def init_tc_v2(c: Connection):
     print(f"[{c.host}]: Executing init_tc_v2")
     
     # load pseudo interface mdoule
-    c.sudo('modprobe ifb')
+    c.run('modprobe ifb')
 
     # get all interfaces
     interfaces = get_netint_cached_v2(c, int_no=-1)
@@ -2024,31 +2024,31 @@ def init_tc_v2(c: Connection):
     for interface in interfaces:
         # run with warn_only since it will return error if no tc commands
         # exist
-        c.sudo('tc qdisc del dev %s root' % interface, warn=True)
+        c.run('tc qdisc del dev %s root' % interface, warn=True)
 
         # set root qdisc
-        c.sudo('tc qdisc add dev %s root handle 1 htb' % interface)
+        c.run('tc qdisc add dev %s root handle 1 htb' % interface)
 
     # bring up pseudo ifb interfaces (for netem)
     cnt = 0
     for interface in interfaces:
         pseudo_interface = 'ifb' + str(cnt)
 
-        c.sudo('ifconfig %s down' % pseudo_interface)
-        c.sudo('ifconfig %s up' % pseudo_interface)
+        c.run('ifconfig %s down' % pseudo_interface)
+        c.run('ifconfig %s up' % pseudo_interface)
 
         # run with warn_only since it will return error if no tc commands
         # exist
-        c.sudo('tc qdisc del dev %s root' % pseudo_interface, warn=True)
+        c.run('tc qdisc del dev %s root' % pseudo_interface, warn=True)
 
         # set root qdisc
-        c.sudo('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
+        c.run('tc qdisc add dev %s root handle 1 htb' % pseudo_interface)
 
         cnt += 1
 
-    c.sudo('iptables -t mangle -F')
+    c.run('iptables -t mangle -F')
     # this is just for counting all packets
-    c.sudo('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
+    c.run('iptables -t mangle -A POSTROUTING -j MARK --set-mark 0')
 
 ## Initialise the router
 @fabric_task
@@ -2067,11 +2067,11 @@ def init_router():
 
         # disable all offloading, e.g. tso = tcp segment offloading
         for interface in interfaces:
-            sudo('ethtool -K %s tso off' % interface)
-            sudo('ethtool -K %s gso off' % interface)
-            sudo('ethtool -K %s lro off' % interface)
-            sudo('ethtool -K %s gro off' % interface)
-            # sudo('ethtool -K %s ufo off' % interface)
+            run('ethtool -K %s tso off' % interface)
+            run('ethtool -K %s gso off' % interface)
+            run('ethtool -K %s lro off' % interface)
+            run('ethtool -K %s gro off' % interface)
+            # run('ethtool -K %s ufo off' % interface)
 
         execute(init_tc)
     else:
@@ -2098,11 +2098,11 @@ def init_router_v2(c: Connection):
 
         # disable all offloading, e.g. tso = tcp segment offloading
         for interface in interfaces:
-            c.sudo('ethtool -K %s tso off' % interface)
-            c.sudo('ethtool -K %s gso off' % interface)
-            c.sudo('ethtool -K %s lro off' % interface)
-            c.sudo('ethtool -K %s gro off' % interface)
-            c.sudo('ethtool -K %s ufo off' % interface)
+            c.run('ethtool -K %s tso off' % interface)
+            c.run('ethtool -K %s gso off' % interface)
+            c.run('ethtool -K %s lro off' % interface)
+            c.run('ethtool -K %s gro off' % interface)
+            c.run('ethtool -K %s ufo off' % interface)
 
         init_tc_v2(c)
     else:

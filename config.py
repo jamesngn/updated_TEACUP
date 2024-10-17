@@ -286,9 +286,9 @@ hostConfig = Config(overrides={
     "connect_kwargs": {
         "password": "password"
     },
-    "sudo": {
+    "run": {
         "password": "password",
-        "prompt":"sudo :"
+        "prompt":"run :"
     },
     "run": {
         "echo": True,

@@ -30,7 +30,7 @@
 # $Id: routersetup.py,v 3b086222a74b 2017/02/20 09:26:27 gja $
 
 import config
-from fabric.api import task as fabric_task, hosts, run, execute, abort, env, settings, sudo
+from fabric.api import task as fabric_task, hosts, run, execute, abort, env, settings, run
 from hostint import get_netint_cached, get_address_pair
 from hosttype import get_type_cached
 
@@ -300,7 +300,7 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
     # 3.14 only, for new kernels it happens automatically via tc use!)
     if queue_disc == 'pie':
         with settings(warn_only=True):
-            sudo('modprobe pie')
+            run('modprobe pie')
 
     if rate == '':
         rate = '1000mbit'
@@ -347,7 +347,7 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
         config_tc_cmd = 'tc class add dev %s parent 1: classid 1:%s htb rate %s ceil %s' % \
             (pseudo_interface, queue_class_no, rate, rate)
         if attach_to_queue == '':
-            sudo(config_tc_cmd)
+            run(config_tc_cmd)
 
         # config queuing discipline and buffer limit on pseudo interface
         config_tc_cmd = 'tc qdisc add dev %s parent 1:%s handle %s: %s limit %s %s' % \
@@ -358,19 +358,19 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
              queue_size,
              queue_disc_params)
         if attach_to_queue == '':
-            sudo(config_tc_cmd)
+            run(config_tc_cmd)
 
         # configure filter to classify traffic based on mark on pseudo device
         config_tc_cmd = 'tc filter add dev %s protocol ip parent 1: ' \
                         'handle %s fw flowid 1:%s' % (
                             pseudo_interface, class_no, queue_class_no)
-        sudo(config_tc_cmd)
+        run(config_tc_cmd)
 
         # configure class for actual interface with max rate
         config_tc_cmd = 'tc class add dev %s parent 1: classid 1:%s ' \
                         'htb rate 1000mbit ceil 1000mbit' % \
             (interface, netem_class_no)
-        sudo(config_tc_cmd, warn_only=True)
+        run(config_tc_cmd, warn_only=True)
 
         # config netem on actual interface
         config_tc_cmd = 'tc qdisc add dev %s parent 1:%s handle %s: ' \
@@ -380,7 +380,7 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
             config_tc_cmd += " delay %sms" % delay
         if loss != "":
             config_tc_cmd += " loss %s%%" % loss
-        sudo(config_tc_cmd, warn_only=True)
+        run(config_tc_cmd, warn_only=True)
 
         # configure filter to redirect traffic to pseudo device first and also
         # classify traffic based on mark after leaving the pseudo interface traffic
@@ -388,18 +388,18 @@ def init_tc_pipe(counter='1', source='', dest='', rate='', delay='', rtt='', los
         config_tc_cmd = 'tc filter add dev %s protocol ip parent 1: handle %s ' \
                         'fw flowid 1:%s action mirred egress redirect dev %s' % \
             (interface, class_no, netem_class_no, pseudo_interface)
-        sudo(config_tc_cmd)
+        run(config_tc_cmd)
 
         cnt += 1
 
     # filter on specific ips
     config_it_cmd = 'iptables -t mangle -A POSTROUTING -s %s -d %s -j MARK --set-mark %s' % \
         (source, dest, class_no)
-    sudo(config_it_cmd)
+    run(config_it_cmd)
     if bidir == '1':
         config_it_cmd = 'iptables -t mangle -A POSTROUTING -s %s -d %s -j MARK --set-mark %s' % \
             (dest, source, class_no)
-        sudo(config_it_cmd)
+        run(config_it_cmd)
 
 def init_tc_pipe_v2(c: Connection, counter='1', source='', dest='', rate='', delay='', rtt='', loss='',
                  queue_size='', queue_size_mult='1.0', queue_disc='', 
@@ -482,7 +482,7 @@ def init_tc_pipe_v2(c: Connection, counter='1', source='', dest='', rate='', del
      # for pie we need to make sure the kernel module is loaded (for kernel pre
     # 3.14 only, for new kernels it happens automatically via tc use!)
     if queue_disc == 'pie':
-        c.sudo('modprobe pie', warn=True)
+        c.run('modprobe pie', warn=True)
 
     if rate == '':
         rate = '1000mbit'
@@ -528,20 +528,20 @@ def init_tc_pipe_v2(c: Connection, counter='1', source='', dest='', rate='', del
         # Configure rate limiting on pseudo interface
         config_tc_cmd = f'tc class add dev {pseudo_interface} parent 1: classid 1:{queue_class_no} htb rate {rate} ceil {rate}'
         if attach_to_queue == '':
-            c.sudo(config_tc_cmd)
+            c.run(config_tc_cmd)
 
         # Configure queuing discipline and buffer limit on pseudo interface
         config_tc_cmd = f'tc qdisc add dev {pseudo_interface} parent 1:{queue_class_no} handle {qdisc_no}: {queue_disc} limit {queue_size} {queue_disc_params}'
         if attach_to_queue == '':
-            c.sudo(config_tc_cmd)
+            c.run(config_tc_cmd)
 
         # Configure filter to classify traffic based on mark on pseudo device
         config_tc_cmd = f'tc filter add dev {pseudo_interface} protocol ip parent 1: handle {class_no} fw flowid 1:{queue_class_no}'
-        c.sudo(config_tc_cmd)
+        c.run(config_tc_cmd)
 
         # Configure class for actual interface with max rate
         config_tc_cmd = f'tc class add dev {interface} parent 1: classid 1:{netem_class_no} htb rate 1000mbit ceil 1000mbit'
-        c.sudo(config_tc_cmd, warn=True)
+        c.run(config_tc_cmd, warn=True)
 
         # Configure netem on actual interface for delay/loss emulation
         config_tc_cmd = f'tc qdisc add dev {interface} parent 1:{netem_class_no} handle {netem_no}: netem limit 1000'
@@ -549,23 +549,23 @@ def init_tc_pipe_v2(c: Connection, counter='1', source='', dest='', rate='', del
             config_tc_cmd += f' delay {delay}ms'
         if loss:
             config_tc_cmd += f' loss {loss}%'
-        c.sudo(config_tc_cmd, warn=True)
+        c.run(config_tc_cmd, warn=True)
 
         # configure filter to redirect traffic to pseudo device first and also
         # classify traffic based on mark after leaving the pseudo interface traffic
         # will go back to actual interface
         config_tc_cmd = f'tc filter add dev {interface} protocol ip parent 1: handle {class_no} fw flowid 1:{netem_class_no} action mirred egress redirect dev {pseudo_interface}'
-        c.sudo(config_tc_cmd)
+        c.run(config_tc_cmd)
 
         cnt += 1
 
     # Set up iptables for traffic filtering based on source and destination IP
     config_it_cmd = f'iptables -t mangle -A POSTROUTING -s {source} -d {dest} -j MARK --set-mark {class_no}'
-    c.sudo(config_it_cmd)
+    c.run(config_it_cmd)
     
     if bidir == '1':
         config_it_cmd = f'iptables -t mangle -A POSTROUTING -s {dest} -d {source} -j MARK --set-mark {class_no}'
-        c.sudo(config_it_cmd)
+        c.run(config_it_cmd)
 
 ## Show dummynet pipes
 def show_dummynet_pipes():
@@ -591,7 +591,7 @@ def show_tc_setup():
         run('tc -d -s class show dev %s' % pseudo_interface)
         run('tc -d -s filter show dev %s' % pseudo_interface)
         cnt += 1
-    sudo('iptables -t mangle -vL')
+    run('iptables -t mangle -vL')
 
 def show_tc_setup_v2(c: Connection):
     """Show tc setup
@@ -610,7 +610,7 @@ def show_tc_setup_v2(c: Connection):
         c.run(f'tc -d -s class show dev {pseudo_interface}')
         c.run(f'tc -d -s filter show dev {pseudo_interface}')
         cnt += 1
-    c.sudo('iptables -t mangle -vL')
+    c.run('iptables -t mangle -vL')
 
 ## Show pipe setup
 @fabric_task
