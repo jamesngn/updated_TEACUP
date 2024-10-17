@@ -20,6 +20,11 @@ env.user = "root"
 
 env.password = "password"
 
+env.sudo_passwords = {
+    "controlhost": "password",
+    # "host2": "password",
+    "host4": "password",
+}
 
 # Set shell used to execute commands
 env.shell = '/bin/sh -c'
@@ -286,9 +291,9 @@ hostConfig = Config(overrides={
     "connect_kwargs": {
         "password": "password"
     },
-    "run": {
+    "sudo": {
         "password": "password",
-        "prompt":"run :"
+        "prompt":"sudo :"
     },
     "run": {
         "echo": True,
