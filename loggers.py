@@ -1039,11 +1039,11 @@ def stop_tcp_logger(file_prefix='', remote_dir='', local_dir='.'):
 
         if linux_tcp_logger == 'ttprobe' or linux_tcp_logger == 'both':
             # flush ttprobe module buffer
-            run('echo flush > /proc/net/ttprobe')
+            sudo('echo flush > /proc/net/ttprobe')
             time.sleep(0.5)
-            run('echo finish > /proc/net/ttprobe')
+            sudo('echo finish > /proc/net/ttprobe')
             #run('pkill -f "cat /proc/net/ttprobe"')
-            run('rmmod ttprobe')
+            sudo('rmmod ttprobe')
             logfile = file_prefix + '_' + \
                 env.host_string.replace(':', '_') + '_ttprobe.log'
         # complete other tasks and exit from this function because ttprobe has differnt bgproce
