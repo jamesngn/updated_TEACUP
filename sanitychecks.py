@@ -612,7 +612,7 @@ def check_connectivity():
                 if htype == "CYGWIN":
                     run('ping -n 2 %s' % ihost, pty=False)
                 else:
-                    run('ping -c 2 %s' % ihost, pty=False)
+                    run('ping -c 2 %s' % ihost, pty=False, warn_only=True)
                     
 @fabric_v2_task
 @parallel
@@ -650,7 +650,7 @@ def check_connectivity_v2(c: Connection):
                     c.run(f'ping -n 2 {ihost}', pty=False)
                 else:
                     # Linux and others use -c for ping count
-                    c.run(f'ping -c 2 {ihost}', pty=False)
+                    c.run(f'ping -c 2 {ihost}', pty=False, warn=True)
     
 
 
