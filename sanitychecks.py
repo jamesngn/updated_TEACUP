@@ -433,15 +433,15 @@ def check_host():
         run('which lighttpd', pty=False)
         run('which nttcp', pty=False)
 
-    put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin', use_run=True)
+    put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin')
     run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
     run('which runbg_wrapper.sh', pty=False)
 
-    put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin',use_run=True)
+    put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin')
     run('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
     run('which kill_iperf.sh', pty=False)
 
-    put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin',use_run=True)
+    put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin')
     run('chmod a+x /usr/bin/pktgen.sh', pty=False)
     run('which pktgen.sh', pty=False)
 
