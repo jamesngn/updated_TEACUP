@@ -33,7 +33,7 @@ import re
 import time
 import socket
 from fabric.api import task, warn, local, run, execute, abort, hosts, env, \
-    settings, parallel, serial, put
+    settings, parallel, serial, put, sudo
 import bgproc
 import config
 from hosttype import get_type_cached
@@ -845,10 +845,10 @@ def start_tcp_logger(file_prefix='', remote_dir='', local_dir='.'):
 
             # ttprobe - start_tcp_logger code
             with settings(warn_only=True):
-                run('rmmod ttprobe')
+                sudo('rmmod ttprobe')
 
             # start new_tcp_probe kernel module
-            run('modprobe ttprobe port=0 full=1 bufsize=16384 omode=%s direction=%s' %
+            sudo('modprobe ttprobe port=0 full=1 bufsize=16384 omode=%s direction=%s' %
             (ttprobe_output_mode, ttprobe_direction))
 
             logfile = remote_dir + file_prefix + '_' + \
