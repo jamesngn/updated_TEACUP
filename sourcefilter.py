@@ -30,7 +30,7 @@
 #
 # $Id: sourcefilter.py,v e7ea179b29d8 2015/05/25 04:28:23 sebastian $
 
-from fabric.api import abort
+from fabric import Connection
 
 
 class SourceFilter:
@@ -43,19 +43,20 @@ class SourceFilter:
     #                    format (S|D)_srcip_srcport[;(S|D)_srcip_srcport]*
     #                    srcport Port number, can be wildcard character '*'
     def __init__(self, filter_str):
+
         if filter_str != '' and len(self.source_filter) == 0:
-       	    for fil in filter_str.split(';'):
+            for fil in filter_str.split(';'):
                 fil = fil.strip()
                 arr = fil.split('_')
                 if len(arr) != 3:
-                    abort('Incorrect source filter entry %s' % fil)
-                if arr[0] != 'S' and arr[0] != 'D':
-                    abort('Incorrect source filter entry %s' % fil)
+                    raise ValueError(f"Incorrect source filter entry {fil}")
+                if arr[0] not in ['S', 'D']:
+                    raise ValueError(f"Incorrect source filter entry {fil}")
 
                 key = arr[0] + '_' + arr[1]  # (S|D)_<ip>
                 val = arr[2]  # <port>
 
-                if not key in self.source_filter:
+                if key not in self.source_filter:
                     self.source_filter[key] = []
 
                 if val == '*':
@@ -95,5 +96,3 @@ class SourceFilter:
     def clear(self):
  
         self.source_filter.clear()
-
-
