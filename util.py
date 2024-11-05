@@ -33,90 +33,94 @@ import os
 
 import time
 import config
-from fabric.api import reboot, task, warn, local, put, puts, run, execute, \
-    abort, hosts, env, settings, parallel
+from fabric2 import task, Connection
+from invoke import run, put
 
+def _copy_file(c, file_name='', remote_path='', method='put'):
+    '''
+    Copy file to remote hosts.
 
-## Copy file to hosts
-#  @param file_name Name of file
-#  @param remote_path Path to copy file to on remote host
-#  @param method Copy method (put or scp)
-def _copy_file(file_name='', remote_path='', method='put'):
+    Args:
+        c (Connection): Fabric Connection object.
+        file_name (str): Name of the file to be copied.
+        remote_path (str): Path on the remote host where the file will be copied.
+        method (str): Copy method ('put' or 'scp').
+    '''
     if remote_path == '':
         remote_path = os.path.dirname(os.path.abspath(file_name))
+    
     if method == 'scp':
-        local(
-            'scp %s %s@%s:%s' %
-            (file_name,
-             env.user,
-             env.host_string,
-             remote_path))
+        run(f'scp {file_name} {c.user}@{c.host}:{remote_path}')
     else:
         put(file_name, remote_path)
 
 
-## Copy file to hosts
-## Uses hosts specified on command line, or hosts specified in config
-## (if no hosts are specified on command line)
-#  @param file_name Name of file
-#  @param remote_path Path to copy file to on remote host
-#  @param method Copy method (put or scp)
 @task
-def copy_file(file_name='', remote_path='', method='put'):
-    "Copy file to specified set of hosts"
+def copy_file(c, file_name='', remote_path='', method='put'):
+    '''
+    Copy file to a specified set of hosts.
+    Uses hosts specified on command line, or hosts specified in config
 
-    if len(env.all_hosts) == 0:
-        # if no hosts specified on command use all hosts specified in config
-        execute(
-            _copy_file,
-            file_name,
-            remote_path,
-            method,
-            hosts=config.TPCONF_router +
-            config.TPCONF_hosts)
+    Args:
+        c (Connection): Fabric Connection object.
+        file_name (str): Name of the file to be copied.
+        remote_path (str): Path on the remote host where the file will be copied.
+        method (str): Copy method ('put' or 'scp').
+    '''
+    if not c.host:
+        # If no hosts are specified on the command, use all hosts specified in config
+        hosts = config.TPCONF_router + config.TPCONF_hosts
+        for host in hosts:
+            conn = Connection(host)
+            _copy_file(conn, file_name, remote_path, method)
     else:
-        execute(
-            _copy_file,
-            file_name,
-            remote_path,
-            method,
-            hosts=env.host_string)
+        _copy_file(c, file_name, remote_path, method)
 
 
-## Add current user public key to authorized keys
-## Assumes ~/.ssh/id_rsa.pub exists
 @task
-def authorize_key():
-    "Add current user's public key to authorised keys"
+def authorize_key(c: Connection):
+    '''
+    Add current user public key to authorized keys
+    Assumes ~/.ssh/id_rsa.pub exists
 
+    Args:
+        c (Connection): Fabric Connection object.
+    '''
     put('~/.ssh/id_rsa.pub', '/tmp')
-    run('touch ~/.ssh/authorized_keys && ' +
-        'cat ~/.ssh/authorized_keys /tmp/id_rsa.pub > /tmp/authorized_keys && ' +
+    run(
+        'touch ~/.ssh/authorized_keys && '
+        'cat ~/.ssh/authorized_keys /tmp/id_rsa.pub > /tmp/authorized_keys && '
         'mv /tmp/authorized_keys ~/.ssh/authorized_keys && rm -f /tmp/id_rsa.pub',
-        pty=False)
+        pty=False
+    )
 
 
-## General method to execute a command on a set of hosts
-#  @param cmd Command to be executed
-def _exec_cmd(cmd):
-    with settings(warn_only=True):
-        run(cmd, pty=False)
+def _exec_cmd(c, cmd: str):
+    '''
+    General method to execute a command on a set of hosts
+
+    Args:
+        c (Connection): Fabric Connection object.
+        cmd (str): Command to be executed.
+    '''
+    with c.cd():
+        run(cmd, warn=True, pty=False)
 
 
-## General method to execute a command on a set of hosts
-## Uses hosts specified on command line, or hosts specified in config
-## (if no hosts are specified on command line)
-#  @param cmd Command to be executed
 @task
-def exec_cmd(cmd=''):
-    "Execute specified command on specified set of hosts"
+def exec_cmd(c, cmd=''):
+    '''
+    Execute specified command on specified set of hosts.
 
-    if len(env.all_hosts) == 0:
-        # if no hosts specified on command use all hosts specified in config
-        execute(
-            _exec_cmd,
-            cmd,
-            hosts=config.TPCONF_router +
-            config.TPCONF_hosts)
+    Args:
+        c (Connection): Fabric Connection object.
+        cmd (str): Command to be executed.
+    '''
+    if not c.host:
+        # If no hosts specified on the command, use all hosts specified in config
+        hosts = config.TPCONF_router + config.TPCONF_hosts
+        for host in hosts:
+            conn = Connection(host)
+            _exec_cmd(conn, cmd)
     else:
-        execute(_exec_cmd, cmd, hosts=env.host_string)
+        _exec_cmd(c, cmd)
