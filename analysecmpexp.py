@@ -35,9 +35,8 @@ import errno
 import time
 import datetime
 import re
-from fabric.api import task, warn, put, puts, get, local, run, execute, \
-    settings, abort, hosts, env, runs_once, parallel, hide
-
+from invoke import Exit, run
+from fabric2 import task, Connection, Config
 import config
 from internalutil import mkdir_p, valid_dir
 from clockoffset import DATA_CORRECTED_FILE_EXT
@@ -66,10 +65,12 @@ def read_experiment_ids(exp_list):
             # read lines without newlines
             experiments = f.read().splitlines()
     except IOError:
-        abort('Cannot open file %s' % exp_list)
+        #abort('Cannot open file %s' % exp_list)
+        raise Exit(f'Cannot open file {exp_list}')
 
     if len(experiments) < 1:
-        abort('No experiment IDs specified')
+        #abort('No experiment IDs specified')
+        raise Exit('No experiment IDs specified')
 
     # strip off right white space
     experiments = [e.rstrip() for e in experiments]
@@ -88,8 +89,10 @@ def get_first_experiment_path(experiments):
     if len(files) > 0:
         dir_name = os.path.dirname(files[0])
     else:
-        abort('Cannot find experiment %s\n'
-              'Remove outdated teacup_dir_cache.txt if files were moved.' % experiments[0])
+        #abort('Cannot find experiment %s\n'
+        #      'Remove outdated teacup_dir_cache.txt if files were moved.' % experiments[0])
+        raise Exit(f'Cannot find experiment {experiments[0]}\n'
+                   'Remove outdated teacup_dir_cache.txt if files were moved.')
 
     return dir_name
 
@@ -116,7 +119,8 @@ def build_match_strings(test_id='', variables='',
 
     res = re.search(test_id_prefix, test_id)
     if res == None:
-        abort('Cannot find test ID prefix in test ID %s' % test_id)
+        #abort('Cannot find test ID prefix in test ID %s' % test_id)
+        raise Exit(f'Cannot find test ID prefix in test ID {test_id}')
 
     # cut off the test_id_prefix part
     test_id = test_id[res.end():]
@@ -428,17 +432,21 @@ def analyse_cmpexp(exp_list='experiments_completed.txt', res_dir='', out_dir='',
     "Compare metrics for different experiments"
 
     if ptype != 'box' and ptype != 'mean' and ptype != 'median':
-        abort('ptype must be either box, mean or median')
+        #abort('ptype must be either box, mean or median')
+        raise Exit('ptype must be either box, mean or median')
 
     check = get_metric_params(metric, smoothed, ts_correct)
     if check == None:
-        abort('Unknown metric %s specified' % metric)
+        #abort('Unknown metric %s specified' % metric)
+        raise Exit(f'Unknown metric {metric} specified')
 
     if source_filter == '':
-        abort('Must specify at least one source filter')
+        #abort('Must specify at least one source filter')
+        raise Exit('Must specify at least one source filter')
 
     if len(source_filter.split(';')) > 12:
-        abort('Cannot have more than 12 filters')
+        #abort('Cannot have more than 12 filters')
+        raise Exit('Cannot have more than 12 filters')
 
     # prevent wrong use of res_time_mode
     if metric != 'restime' and res_time_mode != '0':
@@ -545,9 +553,7 @@ def analyse_cmpexp(exp_list='experiments_completed.txt', res_dir='', out_dir='',
         out_files = {}
         _ext = ext
 
-        files = get_testid_file_list('', experiment,
-                                      '%s' % _ext,
-                                      'LC_ALL=C sort', res_dir)
+        files = get_testid_file_list('', experiment, f'{ext}', 'LC_ALL=C sort', res_dir)
         if merge_data == '1':
             # change extension
             _ext += '.all'
@@ -562,17 +568,19 @@ def analyse_cmpexp(exp_list='experiments_completed.txt', res_dir='', out_dir='',
             if res and sfil.is_in(res.group(1)):
                 # only add file if enough data points
                 rows = int(
-                    local('wc -l %s | awk \'{ print $1 }\'' %
-                          f, capture=True))
+                    run(f'wc -l {f} | awk \'{{ print $1 }}\'', capture=True))
                 if rows > int(min_values):
                     out_files[res.group(1)] = f
 
         #print(out_files)
         #print(leg_names)
         if len(out_files) < len(leg_names):
-            abort(
-                'No data files for some of the source filters for experiment %s' %
-                experiment)
+            #abort(
+            #    'No data files for some of the source filters for experiment %s' %
+            #    experiment)
+            raise Exit(
+                f'No data files for some of the source filters for experiment {experiment}')
+
 
         sorted_files = sort_by_flowkeys(out_files, source_filter)
 
@@ -625,7 +633,9 @@ def analyse_cmpexp(exp_list='experiments_completed.txt', res_dir='', out_dir='',
     if lnames != '':
         lnames_arr = lnames.split(';')
         if len(lnames_arr) != len(leg_names):
-            abort(
+            #abort(
+            #    'Number of legend names must be qual to the number of source filters')
+            raise Exit(
                 'Number of legend names must be qual to the number of source filters')
         leg_names = lnames_arr
 
@@ -674,7 +684,8 @@ def analyse_cmpexp(exp_list='experiments_completed.txt', res_dir='', out_dir='',
                 stime, etime, plot_params, plot_script)
 
     # done
-    puts('\n[MAIN] COMPLETED analyse_cmpexp %s \n' % test_id_pfx)
+    print(f'\n[MAIN] COMPLETED analyse_cmpexp {test_id_pfx}\n')
+
                       
 
 ## Generate a 2d density plot with one paramter on x, one one y and the third
@@ -754,16 +765,19 @@ def analyse_2d_density(exp_list='experiments_completed.txt', res_dir='', out_dir
 
     check = get_metric_params(xmetric, smoothed, ts_correct)
     if check == None:
-        abort('Unknown metric %s specified with xmetric' % xmetric)
+        #abort('Unknown metric %s specified with xmetric' % xmetric)
+        raise Exit(f'Unknown metric {xmetric} specified with xmetric')
     check = get_metric_params(ymetric, smoothed, ts_correct)
     if check == None:
-        abort('Unknown metric %s specified with ymetric' % ymetric)
+        #abort('Unknown metric %s specified with ymetric' % ymetric)
+        raise Exit(f'Unknown metric {ymetric} specified with ymetric')
 
     #if source_filter == '':
     #    abort('Must specify at least one source filter')
 
     if len(source_filter.split(';')) > 12:
-        abort('Cannot have more than 12 filters')
+        #abort('Cannot have more than 12 filters')
+        raise Exit('Cannot have more than 12 filters')
 
     # XXX more param checking
 
@@ -933,8 +947,7 @@ def analyse_2d_density(exp_list='experiments_completed.txt', res_dir='', out_dir
             if res and sfil.is_in(res.group(1)):
                 # only add file if enough data points
                 rows = int(
-                    local('wc -l %s | awk \'{ print $1 }\'' %
-                          f, capture=True))
+                    run(f'wc -l {f} | awk \'{{ print $1 }}\'', capture=True))
                 if rows > int(min_values):
                     x_files.append(f)
 
@@ -945,8 +958,7 @@ def analyse_2d_density(exp_list='experiments_completed.txt', res_dir='', out_dir
             if res and sfil.is_in(res.group(1)):
                 # only add file if enough data points
                 rows = int(
-                    local('wc -l %s | awk \'{ print $1 }\'' %
-                          f, capture=True))
+                    run(f'wc -l {f} | awk \'{{ print $1 }}\'', capture=True))
                 if rows > int(min_values):
                     y_files.append(f)
 
@@ -958,7 +970,9 @@ def analyse_2d_density(exp_list='experiments_completed.txt', res_dir='', out_dir
     if lnames != '':
         lnames_arr = lnames.split(';')
         if len(lnames_arr) != len(leg_names):
-            abort(
+            #abort(
+            #    'Number of legend names must be qual to the number of source filters')
+            raise Exit(
                 'Number of legend names must be qual to the number of source filters')
         leg_names = lnames_arr
 
@@ -983,5 +997,4 @@ def analyse_2d_density(exp_list='experiments_completed.txt', res_dir='', out_dir
                     groups, leg_names, plot_params, plot_script)
 
     # done
-    puts('\n[MAIN] COMPLETED analyse_2d_density %s \n' % test_id_pfx)
-
+    print(f'\n[MAIN] COMPLETED analyse_2d_density {test_id_pfx}\n')
