@@ -29,8 +29,10 @@
 #
 # $Id: getfile.py,v e7ea179b29d8 2015/05/25 04:28:23 sebastian $
 
+#Provides functions for interacting with the operating system, such as file operations.
 import os
-from fabric.api import get, local, run, abort, env, puts
+import subprocess
+from fabric import Connection
 from hosttype import get_type_cached
 
 
@@ -38,65 +40,89 @@ from hosttype import get_type_cached
 #  @param file_name Name of the file to compute MD5 over
 #  @param for_local If '0' run on remote host, fi '1' run on local host
 #  @return MD5 hash
-def _get_md5val(file_name='', for_local='0'):
+# Computes the MD5 hash of a file. It determines the appropriate command to use based on the host's operating system (FreeBSD/Darwin, Linux/CYGWIN) and executes it either locally or remotely.
+def _get_md5val(file_name='', for_local='0', c=None):
     "Get MD5 hash for file depending on OS"
 
     # get type of current host
-    htype = get_type_cached(env.host_string, for_local)
+    htype = get_type_cached(c.host, for_local)
 
-    if htype == 'FreeBSD' or htype == 'Darwin':
-        md5_command = "md5 %s | awk '{ print $NF }'" % file_name
-    elif htype == 'Linux' or htype == 'CYGWIN':
-        md5_command = "md5sum %s | awk '{ print $1 }'" % file_name
+    if htype in ['FreeBSD', 'Darwin']:
+        md5_command = f"md5 {file_name} | awk '{{ print $NF }}'"
+    elif htype in ['Linux', 'CYGWIN']:
+        md5_command = f"md5sum {file_name} | awk '{{ print $1 }}'"
     else:
         md5_command = ''
 
     if for_local == '1':
-        md5_hash = local(md5_command, capture=True)
+        md5_hash = c.run(md5_command, hide=True)
     else:
-        md5_hash = run(md5_command, pty=False, shell=False)
+        md5_hash = c.run(md5_command, hide=True, pty=False)
 
-    return md5_hash
+    return md5_hash.stdout.strip()
 
 ## Collect log file
 #  @param file_name Name of the log file
 #  @param local_dir Local directory to copy log file into
-def getfile(file_name='', local_dir='.'):
+# Retrieves a file from the remote server. It constructs the full path of the file on the remote server if necessary, 
+#compresses the file using gzip, downloads it to the specified local directory, calculates the MD5 hash on the remote 
+#and local files, compares them, and removes the compressed file from the remote server.
+def getfile(c, file_name='', local_dir='.'):
     "Get file from remote and check that file is not corrupt"
 
-    if file_name == '':
-        abort('Must specify file name')
+    if not file_name:
+        raise ValueError('Must specify file name')
+    #if not file_name:
+       # raise ValueError('Must specify file name')
 
     if file_name[0] != '/':
         # get type of current host
-        htype = get_type_cached(env.host_string)
+        htype = get_type_cached(c.host)
 
         # need to guess the path
-        if env.user == 'root' and not htype == 'CYGWIN':
+        if c.user == 'root' and htype != 'CYGWIN':
             remote_dir = '/root'
         else:
-            remote_dir = '/home/' + env.user
+            remote_dir = f'/home/{c.user}'
 
-        file_name = remote_dir + '/' + file_name
+        file_name = f'{remote_dir}/{file_name}'
     else:
         remote_dir = os.path.dirname(file_name)
+       #remote_dir = '/root' if env.user == 'root' and not htype == 'CYGWIN' else f'/home/{env.user}'
+       #file_name = os.path.join(remote_dir, file_name)
+
+
 
     # gzip and download (XXX could use bzip2 instead, slower but better
     # compression)
-    run('gzip -f %s' % file_name, pty=False)
+    c.run(f'gzip -f {file_name}', pty=False)
+    #run('gzip -f {file_name}', pty=False)
     file_name += '.gz'
-    local_file_name = get(file_name, local_dir)[0]
+    local_file_name = c.get(file_name, local_dir)[0]
 
     # get MD5 on remote
-    md5_val = _get_md5val(file_name, '0')
-    if md5_val != '':
+    md5_val = _get_md5val(c, file_name, '0')
+    if md5_val:
         # get MD5 for downloaded file
-        local_md5_val = _get_md5val(local_file_name, '1')
+        local_md5_val = _get_md5val(None, local_file_name, '1')
         # check if MD5 is correct
         if md5_val != local_md5_val:
-            abort('Failed MD5 check')
+            raise ValueError('Failed MD5 check')
         else:
-            puts('MD5 OK')
+            print('MD5 OK')
 
-    run('rm -f %s' % file_name, pty=False)
+    c.run(f'rm -f {file_name}', pty=False)
+    #if md5_val:
+     #   local_md5_val = _get_md5val(local_file_name, '1')
+      #  if md5_val != local_md5_val:
+       #     raise ValueError('Failed MD5 check')
+        #else:
+         #   print('MD5 OK')
 
+   # run(f'rm -f {file_name}', pty=False)
+##The getfile function first checks if a file name is provided and constructs the full remote file path if necessary.
+#It then compresses the file using gzip on the remote server.
+#The compressed file is then downloaded to the local directory specified.
+#MD5 hashes are calculated for both the remote and local files using the _get_md5val function.
+#If the MD5 hashes match, it prints "MD5 OK"; otherwise, it aborts the process.
+#Finally, it removes the compressed file from the remote server.
