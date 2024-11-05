@@ -31,8 +31,10 @@
 
 import time
 import random
-from fabric.api import task, warn, put, local, run, execute, abort, hosts, \
-    env, settings
+from fabric import Connection, task
+from invoke import run
+from invoke import Connection, SerialGroup
+from fabric import task
 import bgproc
 import config
 from hosttype import get_type_cached
@@ -55,19 +57,20 @@ import os
 #  @param check '0' don't check for nttcp executable,
 #               '1' check for nttcp executable
 #  @param wait Time to wait before process is started
-def start_nttcp_server(counter='1', file_prefix='', remote_dir='',
+def start_nttcp_server(c, counter='1', file_prefix='', remote_dir='',
                        port='', srv_host='', buf_size='', extra_params='',
                        check='1', wait=''):
     if port == '':
-        abort('Must specify port')
+        raise ValueError('Must specify port')
+
     if srv_host == '':
-        abort('Must specify server host')
+        raise ValueError('Must specify server host')
 
     if check == '1':
         # make sure we have executable
         run('which nttcp', pty=False)
         
-    hostOS = get_type_cached(env.host_string)
+    hostOS = get_type_cached(c.host)
     
     if hostOS == 'FreeBSD':
         # Reduces TIME_WAIT state to 30 seconds (2*MSL)
@@ -78,15 +81,14 @@ def start_nttcp_server(counter='1', file_prefix='', remote_dir='',
         run('sysctl -w net.ipv4.tcp_tw_recycle=1')
 
     # start nttcp
-        logfile = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_nttcp.log'
-    nttcp_cmd = 'nttcp -i -p %s -u -v' % port
+    logfile = os.path.join(remote_dir, f"{file_prefix}_{c.host.replace(':', '_')}_{counter}_nttcp.log")
+    nttcp_cmd = f'nttcp -i -p {port} -u -v'
     if buf_size != '':
-        nttcp_cmd += ' -w %s' % buf_size  # can only set send buffer
+        nttcp_cmd += f' -w {buf_size}'  # can only set send buffer
     if extra_params != '':
-        nttcp_cmd += ' ' + extra_params
+        nttcp_cmd += f' {extra_params}'
     pid = runbg(nttcp_cmd, wait, out_file=logfile)
-    bgproc.register_proc(env.host_string, 'nttcp', counter, pid, logfile)
+    bgproc.register_proc(c.host, 'nttcp', counter, pid, logfile)
 
 
 ## Start nttcp client (UDP only)
@@ -103,51 +105,50 @@ def start_nttcp_server(counter='1', file_prefix='', remote_dir='',
 #  @param check '0' don't check for nttcp executable,
 #               '1' check for nttcp executable
 #  @param wait Time to wait before process is started
-def start_nttcp_client(counter='1', file_prefix='', remote_dir='', port='',
+def start_nttcp_client(c, counter='1', file_prefix='', remote_dir='', port='',
                        srv_host='', duration='', interval='1000', psize='100',
                        buf_size='', extra_params='', check='1', wait=''):
 
     if port == '':
-        abort('Must specify port')
+        raise ValueError('Must specify port')
     if srv_host == '':
-        abort('Must specify server host')
+        raise ValueError('Must specify server host')
     if duration == '':
-        abort('Must specify duration')
+        raise ValueError('Must specify duration')
 
     if check == '1':
         # make sure we have nttcp
         run('which nttcp', pty=False)
         
-    hostOS = get_type_cached(env.host_string)
+    hostOS = get_type_cached(c.host)
     
     if hostOS == 'FreeBSD':
         # Reduces TIME_WAIT state to 30 seconds (2*MSL)
         run('sysctl -w net.inet.tcp.msl=15000')
+    
     elif hostOS == 'Linux':
         # Recycle TIME_WAIT sockets faster   
         run('sysctl -w net.ipv4.tcp_tw_recycle=1')
 
     # start nttcp
     # number of bufs to send
-    
     bufs = str(int(float(duration) / (float(interval) / 1000.0)))
     gap = str(int(interval) * 1000)  # gap in microseconds
-    logfile = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_nttcp.log'
-    nttcp_cmd = 'nttcp -g %s -l %s -n %s -p %s -u -t -T -v' % (
-        gap, psize, bufs, port)
+    logfile = os.path.join(remote_dir, f"{file_prefix}_{c.host.replace(':', '_')}_{counter}_nttcp.log")
+    nttcp_cmd = f'nttcp -g {gap} -l {psize} -n {bufs} -p {port} -u -t -T -v {srv_host}'
+    
     if buf_size != '':
-        nttcp_cmd += ' -w %s' % buf_size  # can only set send buffer
+        nttcp_cmd += f' -w {buf_size}'  # can only set send buffer
     if extra_params != '':
-        nttcp_cmd += ' ' + extra_params
+        nttcp_cmd += f' {extra_params}'
     nttcp_cmd += ' %s' % srv_host
-    pid = runbg(nttcp_cmd, wait, out_file=logfile)
-    bgproc.register_proc(env.host_string, 'nttcp', counter, pid, logfile)
+    pid = runbg(c, nttcp_cmd, wait, out_file=logfile)
+    bgproc.register_proc(c.host, 'nttcp', counter, pid, logfile)
 
 
 ## Start nttcp sender and receiver
 ## For parameters see start_nttcp_client() and start_nttcp_server()
-def start_nttcp(counter='1', file_prefix='', remote_dir='', local_dir='',
+def start_nttcp(c, counter='1', file_prefix='', remote_dir='', local_dir='',
                 port='', client='', server='', duration='', interval='', psize='',
                 buf_size='', extra_params_client='', extra_params_server='',
                 check='1', wait=''):
@@ -155,10 +156,10 @@ def start_nttcp(counter='1', file_prefix='', remote_dir='', local_dir='',
 
     server, server_internal = get_address_pair(server)
     client, dummy = get_address_pair(client)
-    execute(start_nttcp_server, counter, file_prefix, remote_dir, port,
+    start_nttcp_server(c, counter, file_prefix, remote_dir, port,
             server_internal, buf_size, extra_params_server,
             check, wait, hosts=[server])
-    execute(start_nttcp_client, counter, file_prefix, remote_dir, port,
+    start_nttcp_client(c, counter, file_prefix, remote_dir, port,
             server_internal, duration, interval, psize, buf_size,
             extra_params_client, check, wait, hosts=[client])
 
@@ -184,48 +185,47 @@ def start_nttcp(counter='1', file_prefix='', remote_dir='', local_dir='',
 #  @param kill If '0' server will terminate according to duration (default),
 #              if '1' kill server after duration to work around
 #              "feature" in iperf that prevents it from stopping after duration
-def start_iperf_server(counter='1', file_prefix='', remote_dir='', port='',
+def start_iperf_server(c, counter='1', file_prefix='', remote_dir='', port='',
                        srv_host='', duration='', mss='', buf_size='', proto='tcp',
                        extra_params='', check='1', wait='', kill='0'):
     if port == '':
-        abort('Must specify port')
+        raise ValueError('Must specify port')
     if srv_host == '':
-        abort('Must specify server host')
+        raise ValueError('Must specify server host')
     if proto != 'tcp' and proto != 'udp':
-        abort("Protocol must be 'tcp' or 'udp'")
+        raise ValueError("Protocol must be 'tcp' or 'udp'")
 
     if check == '1':
         # make sure we have iperf
         run('which iperf', pty=False)
 
     # start iperf
-    logfile = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_iperf.log'
-    iperf_cmd = 'iperf -i 1 -s -p %s -B %s' % (port, srv_host)
+    logfile = f"{remote_dir}{file_prefix}_{c.host.replace(':', '_')}_{counter}_iperf.log"
+    iperf_cmd = f"iperf -i 1 -s -p {port} -B {srv_host}"
     if proto == 'udp':
         iperf_cmd += ' -u'
     if mss != '':
-        iperf_cmd += ' -M %s' % mss
+        iperf_cmd += f' -M {mss}'
     if buf_size != '':
         # only for CAIA patched iperf
-        iperf_cmd += ' -j %s -k %s' % (buf_size, buf_size)
+        iperf_cmd += f' -j {buf_size} -k {buf_size}'
     if extra_params != '':
         iperf_cmd += ' ' + extra_params
     pid = runbg(iperf_cmd, wait, out_file=logfile)
 
-    bgproc.register_proc(env.host_string, 'iperf', counter, pid, logfile)
+    bgproc.register_proc(c.host, 'iperf', counter, pid, logfile)
 
     if kill == '1':
         if duration == '':
-            abort("If kill is set to '1', duration must be specified")
+            raise ValueError("If kill is set to '1', duration must be specified")
 
         # kill iperf server (send SIGTERM first, then SIGKILL after 1 second)
-        kill_cmd = 'kill_iperf.sh %s' % pid
+        kill_cmd = 'kill_iperf.sh {pid}'
         # do this shortly after iperf client is expected to finish
         wait = str(float(wait) + float(duration) + 2.0)
         pid = runbg(kill_cmd, wait)
 
-        bgproc.register_proc(env.host_string, 'kill_iperf', counter, pid, '')
+        bgproc.register_proc(c.host, 'kill_iperf', counter, pid, '')
 
 
 ## Start iperf client
@@ -248,63 +248,62 @@ def start_iperf_server(counter='1', file_prefix='', remote_dir='', port='',
 #  @param kill If '0' client will terminate according to duration (default),
 #              if '1' kill client after duration to work around
 #              "feature" in iperf that prevents it from stopping after duration
-def start_iperf_client(counter='1', file_prefix='', remote_dir='', port='',
+def start_iperf_client(c, counter='1', file_prefix='', remote_dir='', port='',
                        srv_host='', duration='', congestion_algo='', mss='',
                        buf_size='', proto='tcp', bandw='', extra_params='',
                        check='1', wait='', kill='0'):
 
     if port == '':
-        abort('Must specify port')
+        raise ValueError('Must specify port')
     if srv_host == '':
-        abort('Must specify server host')
+        raise ValueError('Must specify server host')
     if proto != 'tcp' and proto != 'udp':
-        abort("Protocol must be 'tcp' or 'udp'")
+        raise ValueError("Protocol must be 'tcp' or 'udp'")
 
     if check == '1':
         # make sure we have iperf
         run('which iperf', pty=False)
 
     # start iperf
-    logfile = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_iperf.log'
-    iperf_cmd = 'iperf -i 1 -c %s -p %s -t %s' % (srv_host, port, duration)
+    logfile = f"{remote_dir}{file_prefix}_{c.host.replace(':', '_')}_{counter}_iperf.log"
+    iperf_cmd = f"iperf -i 1 -c {srv_host} -p {port} -t {duration}"
     if proto == 'udp':
         iperf_cmd += ' -u'
         if bandw != '':
-            iperf_cmd += ' -b %s' % bandw
+            iperf_cmd += f' -b {bandw}'
     else:
         if bandw != '':
             # note that this option does not exist in older iperf versions!
-            iperf_cmd += ' -a %s' % bandw
+            iperf_cmd += f' -a {bandw}'
         if congestion_algo != '':
-            iperf_cmd += ' -Z %s' % congestion_algo
+            iperf_cmd += f' -Z {congestion_algo}'
         if mss != '':
-            iperf_cmd += ' -M %s' % mss
+            iperf_cmd += f' -M {mss}'
     if buf_size != '':
         # only for CAIA patched iperf
-        iperf_cmd += ' -j %s -k %s' % (buf_size, buf_size)
+        iperf_cmd += f' -j {buf_size} -k {buf_size}'
     if extra_params != '':
-        iperf_cmd += ' ' + extra_params
+        iperf_cmd += f' {extra_params}'
     pid = runbg(iperf_cmd, wait, out_file=logfile)
 
-    bgproc.register_proc(env.host_string, 'iperf', counter, pid, logfile)
+    bgproc.register_proc(c.host, 'iperf', counter, pid, logfile)
 
     if kill == '1':
         if duration == '':
-            abort("If kill is set to '1', duration must be specified")
+            raise ValueError("If kill is set to '1', duration must be specified")
 
         # kill iperf client (send SIGTERM first, then SIGKILL after 1 second)
-        kill_cmd = 'kill_iperf.sh %s' % pid
+        kill_cmd = f'kill_iperf.sh {pid}'
         # do this shortly after iperf client is expected to finish
         wait = str(float(wait) + float(duration) + 1.0)
-        pid = runbg(kill_cmd, wait)
+        pid = runbg(c, kill_cmd, wait)
 
-        bgproc.register_proc(env.host_string, 'kill_iperf', counter, pid, '')
+        bgproc.register_proc(c.host, 'kill_iperf', counter, pid, '')
 
 
 ## Start iperf sender and receiver
 ## For parameters see start_iperf_client() and start_iperf_server()
-def start_iperf(counter='1', file_prefix='', remote_dir='', local_dir='',
+def start_iperf(c, counter='1', file_prefix='', remote_dir='', local_dir='',
                 port='', client='', server='', duration='', congestion_algo='',
                 mss='', buf_size='', proto='tcp', rate='', extra_params_client='',
                 extra_params_server='', check='1', wait='', kill='0'):
@@ -312,10 +311,10 @@ def start_iperf(counter='1', file_prefix='', remote_dir='', local_dir='',
 
     server, server_internal = get_address_pair(server)
     client, dummy = get_address_pair(client)
-    execute(start_iperf_server, counter, file_prefix, remote_dir, port,
+    start_iperf_server(c, counter, file_prefix, remote_dir, port,
             server_internal, duration, mss, buf_size, proto, extra_params_server,
             check, wait, kill, hosts=[server])
-    execute(start_iperf_client, counter, file_prefix, remote_dir, port,
+    start_iperf_client(c, counter, file_prefix, remote_dir, port,
             server_internal, duration, congestion_algo, mss, buf_size,
             proto, rate, extra_params_client, check, wait, kill, hosts=[client])
 
@@ -334,7 +333,7 @@ def start_iperf(counter='1', file_prefix='', remote_dir='', local_dir='',
 #  @param extra_params Other parameters passed directly to ping
 #  @param check: '0' don't check for ping executable, '1' check for ping executable
 #  @param wait: time to wait before process is started
-def _start_ping(counter='1', file_prefix='', remote_dir='', dest='',
+def _start_ping(c, counter='1', file_prefix='', remote_dir='', dest='',
                 duration='', rate='1', extra_params='', check='1', wait=''):
 
     if check == '1':
@@ -342,29 +341,28 @@ def _start_ping(counter='1', file_prefix='', remote_dir='', dest='',
         run('which ping', pty=False)
 
     # get host type
-    htype = get_type_cached(env.host_string)
+    htype = get_type_cached(c.host)
+    logfile = f"{remote_dir}{file_prefix}_{c.host.replace(':', '_')}_{counter}_ping.log"
 
-    logfile = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_ping.log'
     if htype == 'CYGWIN':
         ping_cmd = 'ping -n %s' % duration
         # windows ping does not support setting the rate
         if rate != '1':
-            warn(
+            print(
                 'windows ping does not support setting the rate, using rate=1')
     else:
         count = str(int(round(float(duration) * float(rate), 0)))
-        ping_cmd = 'ping -c %s' % count
+        ping_cmd = f'ping -c {count}'
         if rate != '1':
             interval = str(round(1 / float(rate), 3))
-            ping_cmd += ' -i %s' % interval
+            ping_cmd += f' -i {interval}'
 
     if extra_params != '':
-        ping_cmd += ' ' + extra_params
+        ping_cmd += f' {extra_params}'
 
-    ping_cmd += ' %s' % dest
-    pid = runbg(ping_cmd, wait, out_file=logfile)
-    bgproc.register_proc(env.host_string, 'ping', counter, pid, logfile)
+    ping_cmd += ' {dest}'
+    pid = runbg(c, ping_cmd, wait, out_file=logfile)
+    bgproc.register_proc(c.host, 'ping', counter, pid, logfile)
 
 
 ## Start ping wrapper
@@ -379,20 +377,19 @@ def _start_ping(counter='1', file_prefix='', remote_dir='', dest='',
 #  @param extra_params Other parameters passed directly to ping
 #  @param check: '0' don't check for ping executable, '1' check for ping executable
 #  @param wait: time to wait before process is started
-def start_ping(counter='1', file_prefix='', remote_dir='', local_dir='',
+def start_ping(c, counter='1', file_prefix='', remote_dir='', local_dir='',
                client='', dest='', duration='', rate='1', extra_params='',
                check='1', wait=''):
     "Start ping"
 
     if client == '':
-        abort('Must specify client')
+        raise ValueError('Must specify client')
     if dest == "":
-        abort("Must specify destination")
+        raise ValueError("Must specify destination")
 
     client, dummy = get_address_pair(client)
     dummy, dest_internal = get_address_pair(dest)
-    execute(
-        _start_ping,
+    _start_ping(c,
         counter,
         file_prefix,
         remote_dir,
@@ -435,20 +432,20 @@ def _get_document_root(htype):
 #  @param check If '0' don't check for lighttpd executable, if '1' check for 
 #               lighttpd executable
 #  @param wait: time to wait before process is started
-def _start_http_server(counter='1', file_prefix='', remote_dir='',
+def _start_http_server(c, counter='1', file_prefix='', remote_dir='',
                        local_dir='', port='', config_dir='', config_in='',
                        docroot='', check='1'):
     global config
 
     if port == "":
-        abort("Must specify port")
+        raise ValueError("Must specify port")
 
     if check == '1':
              # make sure we have lighttpd
         run('which lighttpd', pty=False)
 
     # get host type
-    htype = get_type_cached(env.host_string)
+    htype = get_type_cached(c.host)
 
     # automatic config if not specified explicitely
     if config_dir == '':
@@ -465,53 +462,43 @@ def _start_http_server(counter='1', file_prefix='', remote_dir='',
         docroot = _get_document_root(htype)
 
     # start server
-    logfile = file_prefix + "_" + \
-        env.host_string.replace(':', '_') + "_" + counter + "_access.log"
+    logfile = f"{file_prefix}_{c.host.replace(':', '_')}_{counter}_access.log"
     # XXX currently we overwrite the main config file if we start multiple
     # servers
     config_file_remote = config_dir + '/lighttpd.conf'
-    config_file = local_dir + '/' + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_lighttpd.conf'
+    config_file = f"{local_dir}/{file_prefix}_{c.host.replace(':', '_')}_{counter}_lighttpd.conf"
     docroot_sed = docroot.replace("/", "\/")
-    pid_file = '/' + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_lighttpd.pid'
+    pid_file = f"/{file_prefix}_{c.host.replace(':', '_')}_{counter}_lighttpd.pid"
     pid_file_sed = pid_file.replace("/", "\/")
-    local('cat %s | sed -e "s/@SERVER_PORT@/%s/" | sed -e "s/@DOCUMENT_ROOT@/%s/" | '
-          'sed -e "s/@ACCESS_LOG_NAME@/%s/" | sed -e "s/@PID_FILE@/%s/" > %s'
-          % (config_in, port, docroot_sed, logfile, pid_file_sed, config_file))
+    run(f"sed -e 's/@SERVER_PORT@/{port}/' "
+        f"-e 's/@DOCUMENT_ROOT@/{docroot_sed}/' "
+        f"-e 's/@ACCESS_LOG_NAME@/{logfile}/' "
+        f"-e 's/@PID_FILE@/{pid_file_sed}/' {config_in} > {config_file}")
 
-    logdir = local(
-        'cat %s | egrep "^var.log_root"' %
-        config_file,
-        capture=True)
-    logdir = logdir.split(" ")[-1].replace('"', '')
-    logfile = logdir + "/" + logfile
-    statedir = local(
-        'cat %s | egrep "^var.state_dir"' %
-        config_file,
-        capture=True)
-    statedir = statedir.split(" ")[-1].replace('"', '')
+    logdir = c.local(f"grep '^var.log_root' {config_file}", capture=True).split()[-1].strip('"')
+    logfile = f"{logdir}/{logfile}"
+    statedir = c.local(f"grep '^var.state_dir' {config_file}", capture=True).split()[-1].strip('"')
 
-    run('mkdir -p %s' % logdir, pty=False)
-    with settings(warn_only=True):
-        run('mkdir -p %s' % docroot, pty=False)
-    put(config_file, config_file_remote)
-    local('gzip %s' % config_file)
-    run('rm -f %s' % logfile, pty=False)
+    # Ensure directories exist
+    run(f'mkdir -p {logdir}')
+    run(f'mkdir -p {docroot}')
+
+    c.put(config_file, config_file_remote)
+    run(f'gzip {config_file}')
+    run(f'rm -f {logfile}')
+
 
     # generate dummy /index.html
-    run('cd %s && dd if=/dev/zero of=index.html bs=1024 count=1' %
-        docroot, pty=False)
+    run(f'cd {docroot} && dd if=/dev/zero of=index.html bs=1024 count=1')
 
     if htype == 'FreeBSD' or htype == 'Linux' or htype == 'Darwin':
-        run('lighttpd -f %s ; sleep 0.1' % config_file_remote)
+        run(f'lighttpd -f {config_file_remote} ; sleep 0.1')
     elif htype == "CYGWIN":
-        run('/usr/sbin/lighttpd -f %s ; sleep 0.1' %
-            config_file_remote, pty=False)
+         run('/usr/sbin/lighttpd -f %{config_file_remote} ; sleep 0.1')
 
-    pid = run('cat %s%s' % (statedir, pid_file), pty=False)
+    pid = run(f'cat {statedir}{pid_file}')
     # currently we only download the access.log, but not the error.log
-    bgproc.register_proc(env.host_string, 'lighttpd', counter, pid, logfile)
+    bgproc.register_proc(c.host, 'lighttpd', counter, pid, logfile)
 
 
 ## Start lighttpd web server wrapper
@@ -528,16 +515,15 @@ def _start_http_server(counter='1', file_prefix='', remote_dir='',
 #  @param check If '0' don't check for lighttpd executable, if '1' check for 
 #               lighttpd executable
 #  @param wait: time to wait before process is started
-def start_http_server(counter='1', file_prefix='', remote_dir='', local_dir='',
+def start_http_server(c, counter='1', file_prefix='', remote_dir='', local_dir='',
                       server='', port='', config_dir='', config_in='', docroot='',
                       check='1', wait=''):
     "Start HTTP server"
 
     if server == '':
-        abort('Must specify server')
+        raise ValueError('Must specify server')
     server, dummy = get_address_pair(server)
-    execute(
-        _start_http_server,
+    _start_http_server(c,
         counter,
         file_prefix,
         remote_dir,
@@ -558,13 +544,13 @@ def start_http_server(counter='1', file_prefix='', remote_dir='', local_dir='',
 #  @param duration Duration of 'video' files in seconds
 #  @param rates Comma-separated list of 'video' rates
 #  @param cycles Comma-separated list of cycle times
-def _create_http_dash_content(
+def _create_http_dash_content(c,
         counter='1', file_prefix='', local_dir='', docroot='', duration='',
         rates='', cycles=''):
     "Create dummy video chunks"
 
     # get host type
-    htype = get_type_cached(env.host_string)
+    htype = get_type_cached(c.host)
 
     if docroot == '':
         docroot = _get_document_root(htype)
@@ -575,14 +561,13 @@ def _create_http_dash_content(
     script_file_local = local_dir + '/' + script_file
     cycles = cycles.replace(',', ' ')
     rates = rates.replace(',', ' ')
-    local('cat %s | sed -e "s/@PERIODS@/%s/" | sed -e "s/@BRATES@/%s/" | '
-          'sed -e "s/@DURATION@/%s/" > %s'
-          % (script_in, cycles, rates, duration, script_file_local))
+    run(f"sed -e 's/@PERIODS@/{cycles}/' "
+        f"-e 's/@BRATES@/{rates}/' "
+        f"-e 's/@DURATION@/{duration}/' {script_in} > {script_file_local}")
     # upload, run script, remove script
-    put(script_file_local, docroot)
-    run('chmod a+x %s' % docroot + '/' + script_file, pty=False)
-    run('cd %s && ./%s && rm -f %s' %
-        (docroot, script_file, script_file), pty=False)
+    c.put(script_file_local, docroot)
+    run(f'chmod a+x {docroot}/{script_file}')
+    run(f'cd {docroot} && ./{script_file} && rm -f {script_file}')
 
 
 ## Create DASH content on web server wrapper
@@ -597,17 +582,16 @@ def _create_http_dash_content(
 #  @param cycles Comma-separated list of cycle times
 #  @param check Not used, only for symmetry with the other functions
 #  @param wait Not used, only for symmetry with the other functions
-def create_http_dash_content(
+def create_http_dash_content(c,
         counter='1', file_prefix='', remote_dir='', local_dir='',
         server='', docroot='', duration='', rates='', cycles='',
         check='1', wait=''):
     "Setup content for DASH on HTTP server"
 
     if server == '':
-        abort('Must specify server')
+        raise ValueError('Must specify server')
     server, dummy = get_address_pair(server)
-    execute(
-        _create_http_dash_content,
+    _create_http_dash_content(c,
         counter,
         file_prefix,
         local_dir,
@@ -625,13 +609,13 @@ def create_http_dash_content(
 #  @param docroot Document root on server
 #  @param duration Not used
 #  @param sizes Comma-separated list of file sizes
-def _create_http_incast_content(
+def _create_http_incast_content(c,
         counter='1', file_prefix='', local_dir='', docroot='', duration='',
         sizes=''):
     "Create dummy content"
 
     # get host type
-    htype = get_type_cached(env.host_string)
+    htype = get_type_cached(c.host)
 
     if docroot == '':
         docroot = _get_document_root(htype)
@@ -643,13 +627,12 @@ def _create_http_incast_content(
     script_file_local = local_dir + '/' + script_file
     sizes = sizes.replace(',', ' ')
     #duration = duration.replace(',', ' ')
-    local('cat %s | sed -e "s/@SIZES@/%s/" > %s'
-          % (script_in, sizes, script_file_local))
+    run(f'cat {script_in} | sed -e "s/@SIZES@/{sizes}/" > {script_file_local}')
     # upload, run script, remove script
-    put(script_file_local, docroot)
-    run('chmod a+x %s' % docroot + '/' + script_file, pty=False)
-    run('cd %s && ./%s && rm -f %s' %
-        (docroot, script_file, script_file), pty=False)
+    c.put(script_file_local, docroot)
+    run(f'chmod a+x {docroot}/{script_file}')
+    run(f'cd {docroot} && ./{script_file} && rm -f {script_file}')
+
 
 
 ## Create incast content on web server wrapper
@@ -663,17 +646,16 @@ def _create_http_incast_content(
 #  @param sizes Comma-separated list of file sizes
 #  @param check Not used, only for symmetry with the other functions
 #  @param wait Not used, only for symmetry with the other functions
-def create_http_incast_content(
+def create_http_incast_content(c,
         counter='1', file_prefix='', remote_dir='',
         local_dir='', server='', docroot='', duration='', sizes='', check='1',
         wait=''):
     "Setup content for DASH on HTTP server"
 
     if server == '':
-        abort('Must specify server')
+        raise ValueError('Must specify server')
     server, dummy = get_address_pair(server)
-    execute(
-        _create_http_incast_content,
+    _create_http_incast_content(c,
         counter,
         file_prefix,
         local_dir,
@@ -704,7 +686,7 @@ def create_http_incast_content(
 #  @param check If '0' don't check for ping executable,
 #               if '1' check for ping executable
 #  @param wait Time to wait before process is started
-def _start_httperf(counter='1', name='httperf', file_prefix='', remote_dir='',
+def _start_httperf(c, counter='1', name='httperf', file_prefix='', remote_dir='',
                    port='80', server='', conns='', rate='', timeout='',
                    calls='', burst='', wsesslog='', wsesslog_timeout='0',
                    period='', sessions='1', call_stats=1000, extra_params='',
@@ -719,7 +701,7 @@ def _start_httperf(counter='1', name='httperf', file_prefix='', remote_dir='',
         call_stats = 1000
 
     logfile = remote_dir + file_prefix + '_' + \
-        env.host_string + '_' + counter + '_' + name + '.log'
+        c.host + '_' + counter + '_' + name + '.log'
 
     # set send and receive buffer to higher than default
     # need to set --call-stats (number of slots for stats),
@@ -729,33 +711,32 @@ def _start_httperf(counter='1', name='httperf', file_prefix='', remote_dir='',
     # NOTE: setting send-buffer or recv-buffer to 2MB causes httperf to not
     #       run properly and finally crash on FreeBSD!
     #       also the whole FreeBSD machine becomes unresponsive!
-    httperf_cmd = 'httperf --send-buffer=65536 --recv-buffer=1048576 ' \
-                  '--call-stats=%s' % str(call_stats)
+    httperf_cmd = f'httperf --send-buffer=65536 --recv-buffer=1048576 --call-stats={call_stats}'
 
     if server != '':
-        httperf_cmd += ' --server %s --port %s' % (server, port)
+        httperf_cmd += f' --server {server} --port {port}'
     if conns != '':
-        httperf_cmd += ' --num-conns %s' % conns
+        httperf_cmd += f' --num-conns {conns}'
     if rate != '':
-        httperf_cmd += ' --rate %s' % rate
+        httperf_cmd += f' --rate {rate}'
     if timeout != '':
-        httperf_cmd += ' --timeout %s' % timeout
+        httperf_cmd += f' --timeout {timeout}'
     if calls != '':
-        httperf_cmd += ' --num-calls %s' % calls
+        httperf_cmd += f' --num-calls {calls}'
     if burst != '':
-        httperf_cmd += ' --burst-length %s' % burst
+        httperf_cmd += f' --burst-length {burst}'
     if period != '':
-        httperf_cmd += ' --period=%s' % period
+        httperf_cmd += f' --period={period}'
     if wsesslog != '':
         # use set --retry-on-failure to avoid new connection in case of failure
         # (we should only have transient failures)
-        httperf_cmd += ' --wsesslog %s,%s,%s --retry-on-failure' % (
-            sessions, wsesslog_timeout, wsesslog)
+        httperf_cmd += f' --wsesslog {sessions},
+                {wsesslog_timeout},{wsesslog} --retry-on-failure'
     if extra_params != '':
         httperf_cmd += ' ' + extra_params
 
     pid = runbg(httperf_cmd, wait, out_file=logfile)
-    bgproc.register_proc(env.host_string, name, counter, pid, logfile)
+    bgproc.register_proc(c.host, name, counter, pid, logfile)
 
 
 ## Start httperf wrapper
@@ -779,20 +760,20 @@ def _start_httperf(counter='1', name='httperf', file_prefix='', remote_dir='',
 #  @param check If '0' don't check for ping executable,
 #               if '1' check for ping executable
 #  @param wait Time to wait before process is started
-def start_httperf(counter='1', file_prefix='', remote_dir='', local_dir='', port='',
+def start_httperf(c, counter='1', file_prefix='', remote_dir='', local_dir='', port='',
                   client='', server='', conns='', rate='', timeout='', calls='',
                   burst='', wsesslog='', wsesslog_timeout='', period='', sessions='1',
                   extra_params='', check='1', wait=''):
     "Start httperf on client"
 
     if client == '':
-        abort('Must specify client')
+        raise ValueError('Must specify client')
     if server == "":
-        abort("Must specify server")
+        raise ValueError("Must specify server")
 
     client, dummy = get_address_pair(client)
     dummy, server_internal = get_address_pair(server)
-    execute(_start_httperf, counter=counter, name='httperf', file_prefix=file_prefix,
+    _start_httperf(c, counter=counter, name='httperf', file_prefix=file_prefix,
             remote_dir=remote_dir, port=port, server=server_internal,
             conns=conns, rate=rate, timeout=timeout, calls=calls, burst=burst,
             wsesslog=wsesslog, wsesslog_timeout=wsesslog_timeout,
@@ -819,15 +800,15 @@ def start_httperf(counter='1', file_prefix='', remote_dir='', local_dir='', port
 #                          if timeout expires and end session)
 #  @param check '0' don't check for ping executable, '1' check for ping executable
 #  @param wait Time to wait before process is started
-def _start_httperf_dash(
+def _start_httperf_dash(c,
         counter='1', file_prefix='', remote_dir='', local_dir='',
         port='', server='', duration='', rate='', cycle='', prefetch='0.0',
         prefetch_timeout='', extra_params='', with_timeout='0',
         check='1', wait=''):
 
     # generate session log
-    spath = "/video_files-%s-%s" % (cycle, rate)
-    wlog = file_prefix + "_" + env.host_string + "_" + counter + "_wlog.log"
+    spath = f"/video_files-{cycle}-{rate}"
+    wlog = f"{file_prefix}_{c.host}_{counter}_wlog.log"
     wlog_local = local_dir + '/' + wlog
     cpath = "/tmp/" + wlog
 
@@ -844,10 +825,10 @@ def _start_httperf_dash(
     # now determine size of play chunk in bytes
     play_chunk_size = str(float(cycle) * float(rate) * 1000 / 8)
 
-    local('rm -f %s ; touch %s' % (wlog_local, wlog_local))
+    run('rm -f  {wlog_local}; touch {wlog_local}')
 
     if float(prefetch) > 60.0:
-        abort('Prefetch time cannot be more than 60 seconds')
+        raise ValueError('Prefetch time cannot be more than 60 seconds')
 
     if float(prefetch) > 0.0:
         prefetch_last_byte = str(
@@ -857,18 +838,18 @@ def _start_httperf_dash(
             prefetch_timeout = play_timeout
 
         if with_timeout == '1':
-            local(
-                'echo %s/0 size=%s pace_time=0 timeout=%s headers=\\\'Range: '
-                'bytes=0-%s\\\' >> %s' %
+            c.local(
+                'echo {}/0 size={} pace_time=0 timeout={} headers=\'Range: '
+                'bytes=0-{}\' >> {}'.format
                 (spath,
                  prefetch_chunk_size,
                  prefetch_timeout,
                  prefetch_last_byte,
                  wlog_local))
         else:
-            local(
-                'echo %s/0 size=%s pace_time=0 headers=\\\'Range: '
-                'bytes=0-%s\\\' >> %s' %
+            c.local(
+                'echo {}/0 size={} pace_time=0 headers=\'Range: '
+                'bytes=0-{}\' >> {}'.format
                 (spath, prefetch_chunk_size, prefetch_last_byte, wlog_local))
 
         # adjust the number of bursts
@@ -880,27 +861,21 @@ def _start_httperf_dash(
     calls = 1
     for i in range(play_cnt):
         if with_timeout == '1':
-            local(
-                'echo %s/%s size=%s pace_time=%s timeout=%s >> %s' %
-                (spath,
-                 str(calls),
-                    play_chunk_size,
-                    cycle,
-                    play_timeout,
-                    wlog_local))
+            c.local(f"echo {spath}/{calls} size={play_chunk_size} 
+                pace_time={cycle} timeout={play_timeout} >> {wlog_local}")
         else:
-            local(
-                'echo %s/%s size=%s pace_time=%s >> %s' %
-                (spath, str(calls), play_chunk_size, cycle, wlog_local))
+            c.local(f"echo {spath}/{calls} size={play_chunk_size} 
+            pace_time={cycle} >> {wlog_local}")
+
         calls += 1
 
     # upload to client
-    put(wlog_local, cpath)
+    c.put(wlog_local, cpath)
     # gzip local copy
-    local('gzip %s' % wlog_local)
+    c.local(f"gzip {wlog_local}")
 
     # start httperf
-    execute(_start_httperf, counter=counter, name='httperf_dash',
+    _start_httperf(c, counter=counter, name='httperf_dash',
             file_prefix=file_prefix, remote_dir=remote_dir, port=port,
             server=server, wsesslog=cpath, period=0.000001,
             wsesslog_timeout=play_timeout, call_stats=calls,
@@ -927,18 +902,18 @@ def _start_httperf_dash(
 #                          if timeout expires and start a new connection)
 #  @param check '0' don't check for ping executable, '1' check for ping executable
 #  @param wait Time to wait before process is started
-def start_httperf_dash(counter='1', file_prefix='', remote_dir='', local_dir='',
+def start_httperf_dash(c, counter='1', file_prefix='', remote_dir='', local_dir='',
                        port='', client='', server='', duration='', rate='', cycle='',
                        prefetch='', prefetch_timeout='', extra_params='',
                        with_timeout='0', check='1', wait=''):
     "Start httperf DASH client"
 
     if client == "":
-        abort("Must specify client")
+        raise ValueError("Must specify client")
 
     client, dummy = get_address_pair(client)
     dummy, server_internal = get_address_pair(server)
-    execute(_start_httperf_dash, counter, file_prefix, remote_dir, local_dir, port,
+    _start_httperf_dash(c, counter, file_prefix, remote_dir, local_dir, port,
             server_internal, duration, rate, cycle, prefetch, prefetch_timeout,
             extra_params, with_timeout, check, wait, hosts=[client])
 
@@ -957,14 +932,14 @@ def start_httperf_dash(counter='1', file_prefix='', remote_dir='', local_dir='',
 #  @param extra_params Extra parameters
 #  @param check: '0' don't check for ping executable, '1' check for ping executable
 #  @param wait: time to wait before process is started
-def _start_httperf_incast(
+def _start_httperf_incast(c,
         counter='1', file_prefix='', remote_dir='', local_dir='', servers='',
         duration='', period='', burst_size='', response_size='', extra_params='',
         check='1', wait=''):
 
     # generate session log
     spath = '/incast_files-%s' % (response_size)
-    wlog = file_prefix + '_' + env.host_string + '_' + counter + '_wlog.log'
+    wlog = f'{file_prefix}_{c.host}_{counter}_wlog.log'
     wlog_local = local_dir + '/' + wlog
     cpath = '/tmp/' + wlog
 
@@ -973,7 +948,7 @@ def _start_httperf_incast(
         burst_size = '1'
     burst_cnt = int(burst_size) - 1
 
-    local('rm -f %s ; touch %s' % (wlog_local, wlog_local))
+    c.local(f'rm -f {wlog_local} ; touch {wlog_local}')
 
     sessions = 0
     calls = 0
@@ -985,14 +960,13 @@ def _start_httperf_incast(
         # get internal address
         dummy, server_internal = get_address_pair(server)
 
-        local(
-            'echo session server=%s port=%s >> %s' %
-            (server_internal, port, wlog_local))
+        c.local(
+            f'echo session server={server_internal} port={port} >> 
+            {wlog_local}')
         for i in range(request_cnt):
             for j in range(burst_cnt):
-                local(
-                    'echo %s/1 pace_time=0 timeout=%s >> %s' %
-                    (spath, period, wlog_local))
+                c.local(
+                f'echo {spath}/1 pace_time=0 timeout={period} >> {wlog_local}')
                 calls += 1
 
             _period = float(period)
@@ -1004,21 +978,19 @@ def _start_httperf_incast(
                 # are well synchronised
                 _period += 0.001
 
-            local(
-                'echo %s/1 pace_time=%f timeout=%f >> %s' %
-                (spath, _period, _period, wlog_local))
+            c.local(f'echo {spath}/1 pace_time={_period:.6f} timeout={_period:.6f} >> {wlog_local}')
             calls += 1
 
-        local('echo \' \' >> %s' % wlog_local)
+        c.local(f'echo \' \' >> {wlog_local}')
         sessions += 1
 
     # upload to client
-    put(wlog_local, cpath)
+    c.put(wlog_local, cpath)
     # gzip local copy
-    local('gzip %s' % wlog_local)
+    c.local(f'gzip {wlog_local}')
 
     # start httperf
-    execute(_start_httperf, counter=counter, name='httperf_incast',
+    _start_httperf(c, counter=counter, name='httperf_incast',
             file_prefix=file_prefix, remote_dir=remote_dir, port='', server='',
             wsesslog=cpath, period=0.000001, sessions=sessions, call_stats=calls,
             extra_params=extra_params, check=check, wait=wait)
@@ -1039,18 +1011,17 @@ def _start_httperf_incast(
 #  @param extra_params Extra parameters
 #  @param check: '0' don't check for ping executable, '1' check for ping executable
 #  @param wait: time to wait before process is started
-def start_httperf_incast(
+def start_httperf_incast(c,
         counter='1', file_prefix='', remote_dir='', local_dir='', client='', servers='',
         duration='', period='', burst_size='', response_size='', extra_params='',
         check='1', wait=''):
     "Start httperf incast congestion client"
 
     if client == "":
-        abort("Must specify client")
+        raise ValueError("Must specify client")
 
     client, dummy = get_address_pair(client)
-    execute(
-        _start_httperf_incast,
+    _start_httperf_incast(c,
         counter,
         file_prefix,
         remote_dir,
@@ -1088,7 +1059,7 @@ def start_httperf_incast(
 #  @param extra_params Extra parameters
 #  @param check: '0' don't check for ping executable, '1' check for ping executable
 #  @param wait: time to wait before process is started
-def start_httperf_incast_n(
+def start_httperf_incast_n(c,
         counter='1', file_prefix='', remote_dir='', local_dir='', client='', servers='',
         duration='', period='', burst_size='', response_size='', server_port_start='', 
         config_dir='', config_in='', docroot='', sizes='', num_responders='',
@@ -1096,9 +1067,9 @@ def start_httperf_incast_n(
     "Start httperf incast scenario with q querier and n responders"
 
     if client == "":
-        abort("Must specify client")
+        raise ValueError("Must specify client")
     if servers == '':
-        abort('Must specify servers')
+        raise ValueError('Must specify servers')
 
     # convert to int to we can increment it
     counter = int(counter)
@@ -1106,9 +1077,9 @@ def start_httperf_incast_n(
     num_responders_int = int(num_responders)
     servers_list = servers.split(',')
     if num_responders_int < 1:
-        abort('num_responders must be at least 1')
+        raise ValueError('num_responders must be at least 1')
     if num_responders_int > len(servers_list):
-        abort('num_responders cannot exceed number of servers specified with servers')
+        raise ValueError('num_responders cannot exceed number of servers specified with servers')
 
     servers_list = servers_list[0:num_responders_int] 
     client_servers_list = [] # for client
@@ -1120,8 +1091,7 @@ def start_httperf_incast_n(
 
         client_servers_list.append(server + ':' + str(port))
 
-        execute(
-            _start_http_server,
+        _start_http_server(c,
             str(counter),
             file_prefix,
             remote_dir,
@@ -1143,8 +1113,7 @@ def start_httperf_incast_n(
     for server in servers_list:
         server, dummy = get_address_pair(server)
 
-        execute(
-            _create_http_incast_content,
+        _create_http_incast_content(c,
             str(counter),
             file_prefix,
             local_dir,
@@ -1157,8 +1126,7 @@ def start_httperf_incast_n(
 
     # start client/querier
     client, dummy = get_address_pair(client)
-    execute(
-        _start_httperf_incast,
+    _start_httperf_incast(c,
         str(counter),
         file_prefix,
         remote_dir,
@@ -1184,19 +1152,18 @@ def start_httperf_incast_n(
 #  @param rate Number of pings per second
 #  @param use_multicast Empty string means use broadcast address (default), 
 #                       otherwise must set this to IP of the outgoing interface 
-def start_bc_ping(file_prefix='', remote_dir='', local_dir='', bc_addr='', 
+def start_bc_ping(c, file_prefix='', remote_dir='', local_dir='', bc_addr='', 
                   rate='1', use_multicast=''):
     "Start broadcast ping"
 
     if bc_addr == '':
-        abort('Must specify broadcast address')
+        raise ValueError('Must specify broadcast address')
 
     # get host type
-    htype = get_type_cached(env.host_string)
+    htype = get_type_cached(c.host)
 
     name = 'bc_ping'
-    logfile = remote_dir + file_prefix + '_' + \
-        env.host_string + '_' + name + '.log'
+    logfile = f"{remote_dir}{file_prefix}_{c.host_string}_{name}.log"
 
     # use stdbuf to turn off buffering of output
     # set size to 56 bytes (+ 8bytes header), this should be the default anyway
@@ -1204,14 +1171,14 @@ def start_bc_ping(file_prefix='', remote_dir='', local_dir='', bc_addr='',
     if use_multicast == '' and htype == 'Linux':
         ping_cmd += ' -b' # must explicitely set broadcast
     if use_multicast != '':
-        ping_cmd += ' -I %s' % use_multicast 
+        ping_cmd += f' -I {use_multicast}'
     if rate != '1':
         interval = str(round(1 / float(rate), 3))
-        ping_cmd += ' -i %s' % interval
-    ping_cmd += ' %s' % bc_addr
+        ping_cmd += f' -i {interval}'
+    ping_cmd += f' {bc_addr}'
 
     pid = runbg(ping_cmd, '0.0', out_file=logfile)
-    bgproc.register_proc(env.host_string, name, '0', pid, logfile)
+    bgproc.register_proc(c.host, name, '0', pid, logfile)
 
 
 ## Start server-to-client single traffic flow with BITSS pktgen
@@ -1230,17 +1197,17 @@ def start_bc_ping(file_prefix='', remote_dir='', local_dir='', bc_addr='',
 #  @param check '0' don't check for pktgen executable,
 #              '1' check for pktgen executable
 #  @param wait Time to wait before process is started
-def _start_s2c_game(counter='', file_prefix='', remote_dir='', local_dir='', 
+def _start_s2c_game(c, counter='', file_prefix='', remote_dir='', local_dir='', 
                 game_type='q3', client_num='', port='', src_port='', client='', 
                 pkt_interval='0.05', duration='', extra_params='', check='1', wait=''):
     "Start s2c game traffic flow"
 
     if client_num == '':
-        abort('Must specify number of clients with client_num')
+        raise ValueError('Must specify number of clients with client_num')
     if client == '':
-        abort('Must specify client')
+        raise ValueError('Must specify client')
     if port == '':
-        abort('Must specify port')
+        raise ValueError('Must specify port')
 
     if check == '1':
         # make sure we have pktgen 
@@ -1250,16 +1217,14 @@ def _start_s2c_game(counter='', file_prefix='', remote_dir='', local_dir='',
     dummy, client_internal = get_address_pair(client) 
 
     # start pktgen 
-    logfile = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_pktgen.log'
-    pktgen_cmd = 'pktgen.sh -w -game %s -N %s -IP %s -port %s -sport %s -iat %s -secs %s' % \
-                 (game_type, client_num, client_internal, port, src_port, pkt_interval, 
-                  duration)
+    logfile = f"{remote_dir}{file_prefix}_{c.host.replace(':', '_')}_{counter}_pktgen.log"
+    pktgen_cmd =  f"pktgen.sh -w -game {game_type} -N {client_num} -IP {client_internal} -port 
+                  {port} -sport {src_port} -iat {pkt_interval} -secs {duration}"
     if extra_params != '':
         pktgen_cmd += ' ' + extra_params
 
     pid = runbg(pktgen_cmd, wait, out_file=logfile)
-    bgproc.register_proc(env.host_string, 'pktgen', counter, pid, logfile)
+    bgproc.register_proc(c.host, 'pktgen', counter, pid, logfile)
 
 
 ## Start client-to-server single traffic flow with BITSS pktgen
@@ -1279,18 +1244,18 @@ def _start_s2c_game(counter='', file_prefix='', remote_dir='', local_dir='',
 #  @param check '0' don't check for pktgen executable,
 #               '1' check for pktgen executable
 #  @param wait Time to wait before process is started
-def _start_c2s_game(counter='', file_prefix='', remote_dir='', local_dir='', 
+def _start_c2s_game(c, counter='', file_prefix='', remote_dir='', local_dir='', 
                 game_type='q3', client_num='', port='', src_port='', server='', 
                 pkt_interval='0.05', psize='60', duration='', extra_params='', 
                 check='1', wait=''):
     "Start c2s game traffic flow"
 
     if client_num == '':
-        abort('Must specify number of clients with client_num')
+        raise ValueError('Must specify number of clients with client_num')
     if server == '':
-        abort('Must specify server')
+        raise ValueError('Must specify server')
     if port == '':
-        abort('Must specify port')
+        raise ValueError('Must specify port')
 
     if check == '1':
         # make sure we have pktgen 
@@ -1300,17 +1265,15 @@ def _start_c2s_game(counter='', file_prefix='', remote_dir='', local_dir='',
     dummy, server_internal = get_address_pair(server)
 
     # start pktgen 
-    logfile = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_pktgen.log'
-    pktgen_cmd = 'pktgen.sh -c -game %s -N %s -IP %s -port %s -sport %s -iat %s ' \
-                 '-secs %s -c2s_psize %s' % \
-                 (game_type, client_num, server_internal, port, src_port, 
-                  pkt_interval, duration, psize)
+    logfile = f"{remote_dir}{file_prefix}_{c.host.replace(':', '_')}_{counter}_pktgen.log"
+    pktgen_cmd = (f"pktgen.sh -c -game {game_type} -N {client_num} -IP {server_internal} "
+               f"-port {port} -sport {src_port} -iat {pkt_interval} -secs {duration} "
+               f"-c2s_psize {psize}")
     if extra_params != '':
         pktgen_cmd += ' ' + extra_params
 
     pid = runbg(pktgen_cmd, wait, out_file=logfile)
-    bgproc.register_proc(env.host_string, 'pktgen', counter, pid, logfile)
+    bgproc.register_proc(c.host, 'pktgen', counter, pid, logfile)
 
 
 ## Start emulated FPS game traffic session using pktgen 0.3.1 or later
@@ -1346,16 +1309,16 @@ def _start_c2s_game(counter='', file_prefix='', remote_dir='', local_dir='',
 #  @param noclients_game    Emulate server to client traffic of this many clients, or
 #               number of clients in 'clients' parameter if not set (hsnguyen@swin.edu.au)
 
-def start_fps_game(counter='', file_prefix='', remote_dir='', local_dir='', clients='',
+def start_fps_game(c, counter='', file_prefix='', remote_dir='', local_dir='', clients='',
                   server='', game_type='q3', c2s_interval='0.01', c2s_psize='60',
 		  s2c_interval='0.05', duration='', client_start_delay='3.0',
                   extra_params_client='', extra_params_server='', check='1', wait='', noclients_game=''):
     "Start FPS game traffic using pktgen from http://caia.swin.edu.au/bitss"
 
     if clients == '':
-        abort('Must specify at least one client with clients')
+        raise ValueError('Must specify at least one client with clients')
     if server == '':
-        abort('Must specify server')
+        raise ValueError('Must specify server')
 
     counter = int(counter)
 
@@ -1372,7 +1335,7 @@ def start_fps_game(counter='', file_prefix='', remote_dir='', local_dir='', clie
 
     # make sure number of clients is within pktgen's allowed range
     if int(noclients_game) < 4 or int(noclients_game) > 32:
-       abort('Number of clients must be between 4 and 32')
+       raise ValueError('Number of clients must be between 4 and 32')
 
     for client in clients_list:
         fields = client.split(':')
@@ -1382,7 +1345,7 @@ def start_fps_game(counter='', file_prefix='', remote_dir='', local_dir='', clie
             client_port = fields[1]
 
         # start s2c traffic
-        execute(_start_s2c_game,
+        _start_s2c_game(c,
                 counter=str(counter),
                 file_prefix=file_prefix,
                 remote_dir=remote_dir,
@@ -1411,7 +1374,7 @@ def start_fps_game(counter='', file_prefix='', remote_dir='', local_dir='', clie
             client_port = fields[1]
 
         # start c2s traffic
-        execute(_start_c2s_game,
+        _start_c2s_game(c,
                 counter=str(counter),
                 file_prefix=file_prefix,
                 remote_dir=remote_dir,
@@ -1448,52 +1411,47 @@ def start_fps_game(counter='', file_prefix='', remote_dir='', local_dir='', clie
 #  @param mpd: File name of Media Presentation Description (depending on dataset)
 #  @param player_path: Path to dash.js player's index.html page
 
-def _start_dash_streaming_dashjs(counter='1', file_prefix='', remote_dir='', serv='',
+def _start_dash_streaming_dashjs(c, counter='1', file_prefix='', remote_dir='', serv='',
 		duration='', rate='1', check='1', wait='', serv_port='',
 		browser='chrome', chunk_size='', mpd='', player_path=''):
     "Start dash.js DASH traffic flow"
     
-    htype = get_type_cached(env.host_string)
-    
-    logfile = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_dash_streaming_dashjs.log'
+    htype = get_type_cached(c.host)
       
-    logfile2 = remote_dir + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_dash_streaming_dashjs2.log'  
-    
+    logfile = f"{remote_dir}{file_prefix}_{c.host.replace(':', '_')}_{counter}_dash_streaming_dashjs.log"
+    logfile2 = f"{remote_dir}{file_prefix}_{c.host.replace(':', '_')}_{counter}_dash_streaming_dashjs2.log"
+
     count = str(int(round(float(duration) * float(rate), 0)))
-    
+
     xinit_filename = os.path.join(config.TPCONF_script_path, "/tmp/xinitrc_dash")
     with open(xinit_filename,"w") as xinitrc:     
 
         if browser == 'chrome':
-	
-            xinitrc.write("chrome --disable-web-security --incognito --user-data-dir 'http://" 
-            + player_path + 
-            "/index.html?mpd=http://%s:%s/%ssec/%s'" % \
-            (serv, serv_port,chunk_size,mpd))
-	  
+
+            xinitrc.write(
+                f"chrome --disable-web-security --incognito --user-data-dir 
+                        'http://{player_path}/index.html?mpd=http://{serv}:{serv_port}/{chunk_size}sec/{mpd}'"
+            )
         elif browser == 'firefox':
-      
-            xinitrc.write("dbus-run-session firefox -private-window 'http://" 
-                + player_path + 
-                "/index.html?mpd=http://%s:%s/%ssec/%s'" % \
-            (serv, serv_port,chunk_size,mpd))   
-	  
+
+            xinitrc.write(f"dbus-run-session firefox -private-window
+                         'http://{player_path}/index.html?mpd=http://{serv}:{serv_port}/{chunk_size}sec/{mpd}'"
+            )  
+
         else:
-            abort('Browser not supported')
-        
-    put(xinit_filename, '/root/.xinitrc')
+            raise ValueError('Browser not supported')
+
+    c.put(xinit_filename, '/root/.xinitrc')
     
     os.remove(xinit_filename)	    
     
     dash_streaming_cmd = 'startx'
     pid = runbg(dash_streaming_cmd, wait, out_file=logfile)
-    bgproc.register_proc(env.host_string, 'dash_streaming_dashjs', counter, pid, logfile)
+    bgproc.register_proc(c.host, 'dash_streaming_dashjs', counter, pid, logfile)
 
     pkill_cmd = 'pkill ' + browser
     pid = runbg(pkill_cmd, float(wait) + float(duration), out_file=logfile2)
-    bgproc.register_proc(env.host_string, 'dash_streaming_pkill', counter, pid, logfile2)
+    bgproc.register_proc(c.host, 'dash_streaming_pkill', counter, pid, logfile2)
 	
 ## Start DASH streaming at the client side with dash.js player in Chrome or Firefox
 #  @param counter: Unique ID
@@ -1509,28 +1467,27 @@ def _start_dash_streaming_dashjs(counter='1', file_prefix='', remote_dir='', ser
 #  @param mpd: File name of Media Presentation Description (depending on dataset)
 #  @param player_path: Path to dash.js player's index.html page
 
-def start_dash_streaming_dashjs(counter='1', file_prefix='', remote_dir='', local_dir='', client='',
+def start_dash_streaming_dashjs(c, counter='1', file_prefix='', remote_dir='', local_dir='', client='',
 		  serv='', duration='', rate='1', check='1', wait='',serv_port='',
 		  browser='chrome', chunk_size='', mpd='', player_path=''):
     "Start dash.js DASH traffic flow"
      
     if client == '':
-        abort('Must specify client')
+        raise ValueError('Must specify client')
     if serv == '':
-        abort('Must specify server')
+        raise ValueError('Must specify server')
     if serv_port == '':
-        abort('Must specify server port')
+        raise ValueError('Must specify server port')
     if chunk_size == '':
-        abort('Must specify video chunk size')
+        raise ValueError('Must specify video chunk size')
     if mpd == '':
-        abort('Must specify MPD')
+        raise ValueError('Must specify MPD')
     if player_path == '':
-        abort('Must specify player path')
+        raise ValueError('Must specify player path')
 	
     client, dummy = get_address_pair(client)
     dummy, dest_internal = get_address_pair(serv)
-    execute(
-        _start_dash_streaming_dashjs,
+    _start_dash_streaming_dashjs(c,
         counter,
         file_prefix,
         remote_dir,
@@ -1558,20 +1515,20 @@ def start_dash_streaming_dashjs(counter='1', file_prefix='', remote_dir='', loca
 #  @param check If '0' don't check for nginx executable, if '1' check for 
 #               nginx executable
 #  @param wait Time to wait before process is started
-def _start_nginx_server(counter='1', file_prefix='', remote_dir='',
+def _start_nginx_server(c, counter='1', file_prefix='', remote_dir='',
                        local_dir='', port='', config_dir='', config_in='',
                        docroot='', check='1'):
     global config
 
     if port == "":
-        abort("Must specify port")
+        raise ValueError("Must specify port")
 
     if check == '1':
              # make sure we have nginx
         run('which nginx', pty=False)
 
     # get host type
-    htype = get_type_cached(env.host_string)
+    htype = get_type_cached(c.host)
 
     # automatic config if not specified explicitely
     if config_dir == '':
@@ -1588,46 +1545,43 @@ def _start_nginx_server(counter='1', file_prefix='', remote_dir='',
         docroot = _get_document_root(htype)
 
     # start server
-    logfile = file_prefix + "_" + \
-        env.host_string.replace(':', '_') + "_" + counter + "_access.log"
+    logfile = f"{file_prefix}_{c.host.replace(':', '_')}_{counter}_access.log"
     # XXX currently we overwrite the main config file if we start multiple
     # servers
     config_file_remote = config_dir + '/nginx.conf'
-    config_file = local_dir + '/' + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_nginx.conf'
+    config_file = f"{local_dir}/{file_prefix}_{c.host.replace(':', '_')}_{counter}_nginx.conf"
     docroot_sed = docroot.replace("/", "\/")
-    pid_file = '/' + file_prefix + '_' + \
-        env.host_string.replace(':', '_') + '_' + counter + '_nginx.pid'
+    pid_file = f"/{file_prefix}_{c.host.replace(':', '_')}_{counter}_nginx.pid"
     pid_file_sed = pid_file.replace("/", "\/")
-    local('cat %s | sed -e "s/@SERVER_PORT@/%s/" | sed -e "s/@DOCUMENT_ROOT@/%s/" | '
-          'sed -e "s/@ACCESS_LOG_NAME@/%s/" | sed -e "s/@PID_FILE@/%s/" > %s'
-          % (config_in, port, docroot_sed, logfile, pid_file_sed, config_file))
+    c.local('cat %s | sed -e "s/@SERVER_PORT@/%s/" | '
+    'sed -e "s/@DOCUMENT_ROOT@/%s/" | '
+    'sed -e "s/@ACCESS_LOG_NAME@/%s/" | '
+    'sed -e "s/@PID_FILE@/%s/" > %s' %
+    (config_in, port, docroot_sed, logfile, pid_file_sed, config_file))
     
     # Statically set logdir and statedir location
     logdir = "/var/log/nginx"
     logfile = logdir + "/" + logfile
     statedir = "/var/run"
     
-    run('mkdir -p %s' % logdir, pty=False)
-    with settings(warn_only=True):
-        run('mkdir -p %s' % docroot, pty=False)
-    put(config_file, config_file_remote)
-    local('gzip %s' % config_file)
-    run('rm -f %s' % logfile, pty=False)
+    run(f'mkdir -p {logdir}', pty=False)
+    run(f'mkdir -p {docroot}', pty=False, warn=True)
+    c.put(config_file, config_file_remote)
+    c.local(f'gzip {config_file}')
+    run(f'rm -f {logfile}', pty=False)
 
     # generate dummy /index.html
-    run('cd %s && dd if=/dev/zero of=index.html bs=1024 count=1' %
-        docroot, pty=False)
+    run(f'cd {docroot} && dd if=/dev/zero of=index.html bs=1024 count=1', pty=False)
 
     if htype == 'FreeBSD' or htype == 'Linux' or htype == 'Darwin':
-        run('nginx -c %s ; sleep 0.1' % config_file_remote)
+        run(f'nginx -c {config_file_remote} ; sleep 0.1')
     elif htype == "CYGWIN":
-        run('/usr/sbin/nginx -c %s ; sleep 0.1' %
-            config_file_remote, pty=False)
+        run(f'/usr/sbin/nginx -c {config_file_remote} ; sleep 0.1', pty=False)
 
-    pid = run('cat %s%s' % (statedir, pid_file), pty=False)
+
+    pid = run(f'cat {statedir}{pid_file}', pty=False)
     # currently we only download the access.log, but not the error.log
-    bgproc.register_proc(env.host_string, 'nginx', counter, pid, logfile)
+    bgproc.register_proc(c.host, 'nginx', counter, pid, logfile)
 
 ## Start nginx web server wrapper
 #  @param counter Unique ID
@@ -1643,16 +1597,15 @@ def _start_nginx_server(counter='1', file_prefix='', remote_dir='',
 #  @param check If '0' don't check for nginx executable, if '1' check for 
 #               nginx executable
 #  @param wait Time to wait before process is started
-def start_nginx_server(counter='1', file_prefix='', remote_dir='', local_dir='',
+def start_nginx_server(c,counter='1', file_prefix='', remote_dir='', local_dir='',
                       server='', port='', config_dir='', config_in='', docroot='',
                       check='1', wait=''):
     "Start nginx HTTP server"
 
     if server == '':
-        abort('Must specify server')
+        raise ValueError('Must specify server')
     server, dummy = get_address_pair(server)
-    execute(
-        _start_nginx_server,
+    _start_nginx_server(c,
         counter,
         file_prefix,
         remote_dir,
@@ -1663,4 +1616,3 @@ def start_nginx_server(counter='1', file_prefix='', remote_dir='', local_dir='',
         docroot,
         check,
         hosts=[server])
-
