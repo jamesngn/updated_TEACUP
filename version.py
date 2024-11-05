@@ -31,32 +31,37 @@
 
 import os
 import sys
+from invoke import run
 import config
-from fabric.api import task, warn, local, run, execute, abort, hosts, env, \
-    puts, hide
-
+from fabric2 import Connection, Config, task
 
 ## Print out TEACUP version (TASK)
 @task
-def get_version():
-    "Print TEACUP version information"
-   
-    # get version info from VERSION file
+def get_version(c):
+    '''
+    Print TEACUP version information.
+    '''
+    # Print version info from VERSION file
     sys.stdout.write('TEACUP Version ')
-    with open(config.TPCONF_script_path + '/VERSION', 'r') as f:
-        ver_info  = f.readlines() 
+    version_file_path = os.path.join(config.TPCONF_script_path, 'VERSION')
+    with open(version_file_path, 'r') as f:
+        ver_info = f.readlines()
 
-    # if no hg revision info in VERSION, then possibly this is a checked out
-    # copy. try and get hg revision info. 
-    if ver_info[1].find('NN:MMMMMMMMMMMM') > -1:
-        if os.path.exists(config.TPCONF_script_path + '/.hg/'):
+    # If no revision info in VERSION, possibly a checked-out copy.
+    # Try to get hg revision info.
+    if 'NN:MMMMMMMMMMMM' in ver_info[1]:
+        if os.path.exists(os.path.join(config.TPCONF_script_path, '.hg/')):
             curr_dir = os.getcwd()
-            os.chdir(config.TPCONF_script_path)
-            with hide('commands'):
-                rev_info = local('./get_hg_info.sh', capture=True)
-            os.chdir(curr_dir)
+            try:
+            # Change to the script path and get the revision info using the script
+
+                os.chdir(config.TPCONF_script_path)
+                rev_info = run('./get_hg_info.sh', hide=True).stdout
+            finally:
+                 # Go back to the original directory
+                os.chdir(curr_dir)
             ver_info = [ver_info[0] + rev_info + '\n']
-  
+
     sys.stdout.writelines(ver_info)
-    sys.stdout.write('Copyright (c) 2013-2015 Centre for Advanced Internet Architectures\n') 
-    sys.stdout.write('Swinburne University of Technology. All rights reserved.\n') 
+    sys.stdout.write('Copyright (c) 2013-2015 Centre for Advanced Internet Architectures\n')
+    sys.stdout.write('Swinburne University of Technology. All rights reserved.\n')
