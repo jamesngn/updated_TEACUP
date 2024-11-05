@@ -50,11 +50,9 @@ def _list(lines):
 #  @param path Directory to create
 def mkdir_p(path):
     try:
-        os.makedirs(path)
-    except OSError as exc: # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
+        os.makedirs(path, exist_ok=True)  # 'exist_ok' handles the existing dir case in Python 3
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
             raise
 
 
@@ -65,4 +63,3 @@ def valid_dir(path):
         path += '/'
 
     return path
-
