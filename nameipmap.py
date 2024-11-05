@@ -32,23 +32,23 @@
 import os
 import re
 import socket
-
-from fabric.api import task, warn, put, puts, get, local, run, execute, \
-    settings, abort, hosts, env, runs_once, parallel
-
+from invoke import task
+from fabric2 import Connection, task, run
 import config
 
 
 ## Store host name IP mapping at the start of experiments (TASK) 
 #  @param out_dir Experiment directory
 @task
-def get_nameip_map(out_dir):
-    "Store host name to IP mapping in experiment directory"
-
-    fname = out_dir + '/' + out_dir + '_nameip_map.log'
+def get_nameip_map(c, out_dir):
+    """Store host name to IP mapping in experiment directory"""
+    fname = f'{out_dir}/{out_dir}_nameip_map.log'
     with open(fname, 'w') as f:
         for name in sorted(config.TPCONF_hosts + config.TPCONF_router):
-            address = socket.gethostbyname(name)
-            f.write('%s %s\n' % (name, address))
+            try:
+                address = socket.gethostbyname(name)
+                f.write(f'{name} {address}\n')
+            except socket.gaierror:
+                f.write(f'{name} NOT_FOUND\n')
 
-    local('gzip -f %s' % fname)
+    run(f'gzip -f {fname}')
