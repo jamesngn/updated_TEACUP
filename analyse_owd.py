@@ -43,8 +43,11 @@ import zlib     # For calculating crc32 hash
 
 import tempfile
 
+from invoke import Exit
 from fabric.api import task, warn, put, puts, get, local, run, execute, \
     settings, abort, hosts, env, runs_once, parallel, hide
+
+from fabric2 import Connection, Config 
 
 import config
 from internalutil import _list
@@ -141,7 +144,8 @@ def analyse_owd(test_id='', out_dir='', replot_only='0', source_filter='',
     # make it 0 (which is unacceptable for OWD calculations)
     
     if ts_correct == '0':
-        abort("Warning: Cannot do OWD calculations with ts_correct=0")
+        #abort("Warning: Cannot do OWD calculations with ts_correct=0")
+        raise Exit("Warning: Cannot do OWD calculations with ts_correct=0")
 
     (test_id_arr, 
     out_files, 
@@ -224,7 +228,8 @@ def analyse_pktloss(test_id='', out_dir='', replot_only='0', source_filter='',
     "Plot per-flow packet loss events vs time (or cumlative over time)"
     
     if log_loss != '1' and log_loss !='2':
-        abort("Must set log_loss=1 (pkt loss events) or log_loss=2 (cumulative pkt loss)")
+        #abort("Must set log_loss=1 (pkt loss events) or log_loss=2 (cumulative pkt loss)")
+        raise Exit("Must set log_loss=1 (pkt loss events) or log_loss=2 (cumulative pkt loss)")
         
     (test_id_arr, 
     out_files, 
@@ -302,6 +307,9 @@ def _extract_owd_pktloss(test_id='', out_dir='', replot_only='0', source_filter=
                 ts_correct='1', burst_sep='0.0', sburst='1', eburst='0',
                 seek_window='16000', log_loss='0', anchor_map='', owd_midpoint='0'):
     "Extract OWD or PKTLOSS of flows"
+    '''
+    docstring python
+    '''
 
     ifile_ext = '.dmp.gz'
     
@@ -316,10 +324,12 @@ def _extract_owd_pktloss(test_id='', out_dir='', replot_only='0', source_filter=
 
     test_id_arr = test_id.split(';')
     if len(test_id_arr) == 0 or test_id_arr[0] == '':
-        abort('Must specify test_id parameter')
+        #abort('Must specify test_id parameter')
+        raise Exit('Must specify test_id parameter')
 
     if ts_correct == '0' and log_loss == '0':
-        abort('Must use ts_correct=1 when calculating OWD')
+        #abort('Must use ts_correct=1 when calculating OWD')
+        raise Exit('Must use ts_correct=1 when calculating OWD')
 
     # Initialise source filter data structure
     sfil = SourceFilter(source_filter)
@@ -336,7 +346,8 @@ def _extract_owd_pktloss(test_id='', out_dir='', replot_only='0', source_filter=
     anchor_map_list = {}
     if anchor_map != '':
         if replot_only == '1':
-            abort("Must specify replot_only=0 in conjunction with anchor_map")
+            #abort("Must specify replot_only=0 in conjunction with anchor_map")
+            raise Exit("Must specify replot_only=0 in conjunction with anchor_map")
         entries = anchor_map.split(';')
         for entry in entries:
             k, v = entry.split(':')
@@ -627,5 +638,3 @@ def _extract_owd_pktloss(test_id='', out_dir='', replot_only='0', source_filter=
         group += 1
 
     return (test_id_arr, out_files, out_groups)
-
-
