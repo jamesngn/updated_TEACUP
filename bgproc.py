@@ -32,7 +32,8 @@
 import os
 import threading
 from collections import namedtuple
-from fabric.api import puts, abort, local
+from fabric import Connection
+from invoke import UnexpectedExit
 
 
 ## Background process list
@@ -46,7 +47,7 @@ lock = threading.Lock()
 ## Remove all old .start files
 # @param local_dir Local directory for experiment files 
 def file_cleanup(local_dir='.'):
-    local('rm -f %s/*.start' % local_dir)
+    os.system(f'rm -f {local_dir}/*.start')
 
 
 ## Get key string handle based on host, process name and counter
@@ -57,7 +58,7 @@ def file_cleanup(local_dir='.'):
 def _get_handle(host='', name='', counter=''):
     # put counter before name so processes that need to be stopped early
     # (e.g. tcp_logger) are the first in the list of processes for one host
-    return host + '|' + counter + '|' + name
+    return f'{host}|{counter}|{name}'
 
 
 ## Register process in list
@@ -71,11 +72,10 @@ def register_proc(host='', name='', counter='', pid='', log=''):
     hdata = hostStruct(host, pid, log)
     with lock:
         if handle not in proc_reg:
-            proc_reg.update({handle: hdata})
+            proc_reg[handle] = hdata
         else:
-            abort(
-                "Duplicate process handle '%s', increase counter value" %
-                handle)
+            raise Exception(f"Duplicate process handle '{handle}', increase counter value")
+
 
 
 ## Write .start file that allows to register process in list later
@@ -85,26 +85,22 @@ def register_proc(host='', name='', counter='', pid='', log=''):
 #  @param counter Unique counter value for each process
 #  @param pid Process id
 #  @param log Log file name
-def register_proc_later(
-        host='', local_dir='.', name='', counter='', pid='', log=''):
-    file_name = local_dir + '/' + host + '_' + \
-        name + '_' + counter + '_' + pid + '.start'
-    f = open(file_name, 'w')
-    f.write(log)
-    f.close()
+def register_proc_later(host='', local_dir='.', name='', counter='', pid='', log=''):
+    file_name = f'{local_dir}/{host}_{name}_{counter}_{pid}.start'
+    with open(file_name, 'w') as f:
+        f.write(log)
 
 
 ## Register all processes based on .start files
-#  @param local_dir Directory for .start file
+#  @param local_dir Directory for .start file                       
 def register_deferred_procs(local_dir='.'):
     for fn in os.listdir(local_dir):
         if fn.endswith('.start'):
-            file_name = local_dir + '/' + fn
+            file_name = os.path.join(local_dir, fn)
             s = fn.replace('.start', '')
             a = s.split('_')
-            f = open(file_name, 'r')
-            logfile = f.read()
-            f.close()
+            with open(file_name, 'r') as f:
+                logfile = f.read()
             register_proc(a[0], a[1], a[2], a[3], logfile)
             os.remove(file_name)
 
@@ -128,10 +124,7 @@ def remove_proc(host='', name='', counter=''):
 def get_proc_pid(host='', name='', counter=''):
     handle = _get_handle(host, name, counter)
     with lock:
-        if handle in proc_reg:
-            return proc_reg[handle].pid
-        else:
-            return ""
+        return proc_reg.get(handle, hostStruct(host, '', '')).pid
 
 
 ## Return log file name of process
@@ -142,31 +135,26 @@ def get_proc_pid(host='', name='', counter=''):
 def get_proc_log(host='', name='', counter=''):
     handle = _get_handle(host, name, counter)
     with lock:
-        if handle in proc_reg:
-            return proc_reg[handle].log
-        else:
-            return ""
+        return proc_reg.get(handle, hostStruct(host, '', '')).log
 
 
 ## Dump process list
 def print_proc_list():
-    puts('\n[MAIN] Background processes:')
+    print('\n[MAIN] Background processes:')
     with lock:
         for p in sorted(proc_reg):
-            puts("[MAIN] %s : %s" % (p, proc_reg[p]))
+            print(f"[MAIN] {p} : {proc_reg[p]}")
+    print("\n")
 
-    puts("\n")
 
-
-## Clear process list
+## Clear process list 
 def clear_proc_list():
     with lock:
         proc_reg.clear()
+
 
 ## Get list of processes in list
 #  @return List of processes
 def get_proc_list_items():
     with lock:
-        return proc_reg.items()  # Use items() instead of iteritems()
-
-
+        return list(proc_reg.items())
