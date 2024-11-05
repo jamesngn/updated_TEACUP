@@ -43,11 +43,9 @@ import os
 import socket
 import csv
 import tempfile
-import importlib.util
-from subprocess import *
-import tempfile
-from fabric.api import task, warn, put, puts, get, local, run, execute, \
-    settings, abort, hosts, env, runs_once, parallel
+from subprocess import Popen, PIPE
+from fabric import task
+from fabric.connection import Connection
 import config
 from internalutil import mkdir_p
 from filefinder import get_testid_file_list
@@ -55,7 +53,7 @@ from filefinder import get_testid_file_list
 import gzip
 
 ## Create safe place to dump output from stderr of various shell processes
-stderrhack = tempfile.NamedTemporaryFile(delete=False)
+stderrhack = os.tmpfile()
 
 ## File extension for clock offset file
 CLOCK_OFFSET_FILE_EXT = '_clock_offsets.txt'
@@ -74,7 +72,7 @@ TMP_CONF_FILE = tempfile.mktemp(suffix='_oldconfig.py', dir='/tmp/')
 #  @param baseline_host Host we compute offset against (default is first router)
 #  @param out_dir Output directory for results
 @task
-def get_clock_offsets(exp_list='experiments_completed.txt',
+def get_clock_offsets(c, exp_list='experiments_completed.txt',
                       test_id='', pkt_filter='',
                       baseline_host='',
                       out_dir=''):
@@ -88,12 +86,12 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
             with open(exp_list) as f:
                 test_id_arr = f.readlines()
         except IOError:
-            abort('Cannot open file %s' % exp_list)
+            raise RuntimeError('Cannot open file %s' % exp_list)
     else:
         test_id_arr = test_id.split(';')
 
     if len(test_id_arr) == 0 or test_id_arr[0] == '':
-        abort('Must specify test_id parameter')
+        raise RuntimeError('Must specify test_id parameter')
 
     # specify complete tcpdump parameter list
     tcpdump_filter = '-tt -r - -n ' + pkt_filter
@@ -106,7 +104,7 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
                                              '_ctl.dmp.gz', '')
 
         if len(tcpdump_files) == 0:
-            warn('No tcpdump files for control interface for %s' % test_id)
+            print(f'Warning: No tcpdump files for control interface for {test_id}')
             continue
 
         # if we have tcpdumps for control interface we can assume broadcast ping
@@ -114,8 +112,9 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
 
         dir_name = os.path.dirname(tcpdump_files[0])
         # then look for tpconf_vars.log.gz file in that directory 
-        var_file = local('find -L %s -name "*tpconf_vars.log.gz"' % dir_name,
-                         capture=True)
+        var_file = c.local(f'find -L {dir_name} -name "*tpconf_vars.log.gz"',
+                         hide=True).stdout.strip()
+        
         bc_addr = ''
         router_name = ''
 
@@ -125,28 +124,30 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
             # per experiment 
 
             # unzip archived file
-            local('gzip -cd %s > %s' % (var_file, TMP_CONF_FILE))
+            c.local(f'gzip -cd {var_file} > {TMP_CONF_FILE}')
 
             # load the TPCONF_variables into oldconfig
-            oldconfig = imp.load_source('oldconfig', TMP_CONF_FILE)
+            oldconfig = {}
+            with open(TMP_CONF_FILE) as f:
+                exec(f.read(), oldconfig)
 
             # remove temporary unzipped file 
             try:
                 os.remove(TMP_CONF_FILE)
-                os.remove(TMP_CONF_FILE + 'c') # remove the compiled file as well
+               # os.remove(TMP_CONF_FILE + 'c') # remove the compiled file as well
             except OSError:
                 pass
 
             try:
-                bc_addr = oldconfig.TPCONF_bc_ping_address
+                bc_addr = oldconfig.get('TPCONF_bc_ping_address', '')
             except AttributeError:
                 pass
 
-            router_name = oldconfig.TPCONF_router[0].split(':')[0]
+            router_name = oldconfig.get('TPCONF_router',[])[0].split(':')[0]
             
         else:
             # old approach using config.py
-
+            
             try:
                 bc_addr = config.TPCONF_bc_ping_address
             except AttributeError:
@@ -174,10 +175,8 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
         # map of host names (or IPs) and sequence numbers to timestamps
         host_times = {}
         for tcpdump_file in tcpdump_files:
-            host = local(
-                'echo %s | sed "s/.*_\([a-z0-9\.]*\)_ctl.dmp.gz/\\1/"' %
-                tcpdump_file,
-                capture=True)
+            host = c.local(f'echo {tcpdump_file} | sed "s/.*_\([a-z0-9\.]*\)_ctl.dmp.gz/\\1/"',
+                           hide=True).stdout.strip()
             host_times[host] = {}
             #print(host)
             #print(host_times)
@@ -185,13 +184,9 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
             # We pipe gzcat through to tcpdump. Note, since tcpdump exits early
             # (due to "-c num_samples") gzcat's pipe will collapse and gzcat
             # will complain bitterly. So we dump its stderr to stderrhack.
-            init_zcat = Popen(['zcat ' + tcpdump_file], stdin=None,
-                              stdout=PIPE, stderr=stderrhack, shell=True)
-            init_tcpdump = Popen(['tcpdump ' + tcpdump_filter],
-                                 stdin=init_zcat.stdout,
-                                 stdout=PIPE,
-                                 stderr=stderrhack,
-                                 shell=True)
+            init_zcat = Popen(['zcat', tcpdump_file], stdout=PIPE, stderr=stderrhack)
+            init_tcpdump = Popen(['tcpdump', tcpdump_filter], stdin=init_zcat.stdout,
+                                 stdout=PIPE, stderr=stderrhack)
 
             for line in init_tcpdump.stdout.read().splitlines():
                 _time = line.split(" ")[0]
@@ -210,7 +205,7 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
         #host_list = sorted(config.TPCONF_router + config.TPCONF_hosts)
 
         for host in host_list:
-            host_str += ' ' + host
+            host_str += f'{host}'
             if host not in host_times:
                 continue
             for seq in sorted(host_times[host].keys()):
@@ -233,34 +228,34 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
 
         #print(diffs)
 
-        if out_dir == '' or out_dir[0] != '/':
-            dir_name = os.path.dirname(tcpdump_files[0])
-            out_dir = dir_name + '/' + out_dir
+        # Write table of offsets (rows = time, cols = hosts)
+      #  if out_dir == '' or out_dir[0] != '/':
+       #     dir_name = os.path.dirname(tcpdump_files[0])
+        #    out_dir = dir_name + '/' + out_dir
         mkdir_p(out_dir)
-        out_name = out_dir + test_id + CLOCK_OFFSET_FILE_EXT
+        out_name = f'{out_dir}{test_id}{CLOCK_OFFSET_FILE_EXT}'
 
         # write table of offsets (rows = time, cols = hosts)
-        f = open(out_name, 'w')
-        f.write('# ref_time' + host_str + '\n')
-        for seq in sorted(diffs.keys()):
-            if ref_times[seq] is not None:
-                f.write(ref_times[seq])
-            else:
-                # this case should not never happen
-                continue
-
-            f.write(' ')
-
-            for host in host_list:
-                if host in diffs[seq] and diffs[seq][host] is not None:
-                    f.write('{0:.6f}'.format(diffs[seq][host]))
+        with open(out_name, 'w') as f:
+            f.write(f'# ref_time{host_str}\n')
+            for seq in sorted(diffs.keys()):
+                if ref_times[seq] is not None:
+                    f.write(ref_times[seq])
                 else:
-                    f.write('NA')
-                if host != host_list[-1]:
-                    f.write(' ')
-            f.write('\n')
+                # this case should not never happen
+                    continue
 
-        f.close()
+                f.write(' ')
+
+                for host in host_list:
+                    if host in diffs[seq] and diffs[seq][host] is not None:
+                        f.write(f'{diffs[seq][host]:.6f}')
+                    else:
+                        f.write('NA')
+                    if host != host_list[-1]:
+                        f.write(' ')
+                f.write('\n')
+                #f.close()
 
 
 ## Adjust timestamps in interim data file (TASK)
@@ -271,7 +266,7 @@ def get_clock_offsets(exp_list='experiments_completed.txt',
 #  @param out_dir Output directory for results
 #  @return Name of file with corrected timestamps
 @task
-def adjust_timestamps(test_id='', file_name='', host_name='', sep=' ', out_dir=''):
+def adjust_timestamps(c, test_id='', file_name='', host_name='', sep=' ', out_dir=''):
     "Adjust timestamps in data file based on observed clock offsets"
 
     # out_dir is the user-specified out_dir we pass on to get_clock_offsets()
@@ -288,18 +283,16 @@ def adjust_timestamps(test_id='', file_name='', host_name='', sep=' ', out_dir='
         out_dirname += '/'
 
     # clock offset file name
-    offs_fname = out_dirname + test_id + CLOCK_OFFSET_FILE_EXT
+    offs_fname = f'{out_dirname}{test_id}{CLOCK_OFFSET_FILE_EXT}'
     # new file name
-    if file_name.endswith('.gz'):
-        # TBD: Strip the trailing .gz from file_name first
-        new_fname = file_name + DATA_CORRECTED_FILE_EXT + '.gz'        
-    else:
-        new_fname = file_name + DATA_CORRECTED_FILE_EXT
+    # TBD: Strip the trailing .gz from file_name first
+    new_fname = f'{file_name}{DATA_CORRECTED_FILE_EXT}' if not file_name.endswith('.gz') \
+                else f'{file_name}{DATA_CORRECTED_FILE_EXT}.gz'
 
     #print(offs_fname)
 
     if not os.path.isfile(offs_fname):
-        execute(get_clock_offsets, test_id=test_id, out_dir=out_dir)
+        c.execute(get_clock_offsets, test_id=test_id, out_dir=out_dir)
 
     if not os.path.isfile(offs_fname):
         # give up and just make a copy of the existing data, so we have a file
@@ -310,9 +303,8 @@ def adjust_timestamps(test_id='', file_name='', host_name='', sep=' ', out_dir='
 
         # abort so we are on the safe side, user needs to fix or rerun with
         # ts_corerct=0
-        abort('Cannot generate clock offset file for experiment %s' % test_id)
+        raise RuntimeError('Cannot generate clock offset file for experiment {test_id}')
 
-        return new_fname
 
     host_times = []
     last_offs = 0.0
@@ -321,13 +313,7 @@ def adjust_timestamps(test_id='', file_name='', host_name='', sep=' ', out_dir='
             offs_lines = f.readlines()
 
             # find column (note # is first column in first row
-            host_col = -1
-            for col in offs_lines[0].rstrip().split(' '):
-                if col == host_name:
-                    break
-
-                host_col += 1
-
+            host_col = offs_lines[0].split().index(host_name)
             #print(host_name)
             #print(host_col)
 
@@ -349,11 +335,11 @@ def adjust_timestamps(test_id='', file_name='', host_name='', sep=' ', out_dir='
                 host_times.append((ref_time, offs))
 
     except IOError:
-        abort('Cannot open file %s' % offs_fname)
+        raise RuntimeError('Cannot open file {offs_fname}')
 
     if file_name.endswith('.gz'):
-        reader = csv.reader(gzip.open(file_name, 'rb'), delimiter=sep)
-        fout = gzip.open(new_fname, 'wb',1)
+        reader = csv.reader(gzip.open(file_name, 'rt'), delimiter=sep)
+        fout = gzip.open(new_fname, 'wt',1)
     else:
         reader = csv.reader(open(file_name, 'r'), delimiter=sep)
         fout = open(new_fname, 'w')
@@ -383,4 +369,3 @@ def adjust_timestamps(test_id='', file_name='', host_name='', sep=' ', out_dir='
     fout.close()
 
     return new_fname
-
