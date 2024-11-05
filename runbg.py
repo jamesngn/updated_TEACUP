@@ -31,7 +31,8 @@
 
 import time
 import bgproc
-from fabric.api import task, run, execute, env, settings, puts, parallel
+from fabric import Connection, task
+from invoke import Responder
 from hosttype import get_type_cached
 from getfile import getfile
 
@@ -46,38 +47,39 @@ from getfile import getfile
 #  @param pty If set false, don't use pseudo terminal. If true, use pseudo 
 #             terminal (see Fabric documentation)
 #  @return Process ID
-def runbg(command, wait='0.0', out_file="/dev/null",
+def runbg(c, command, wait='0.0', out_file="/dev/null",
           shell=False, pty=True):
 
     # get type of current host
-    htype = get_type_cached(env.host_string)
+    htype = get_type_cached(c.host)
 
     # on Linux with pty set to true, we don't get tool output in log,
     # but that doesn't matter so much, since we are starting most things
     # delayed with runbg_wrapper.sh. problem with pty=false is that
     # with small sleep values processes may not get started on Linux (on
     # slow systems such as VMs)
-    if htype == 'Linux' or htype == 'FreeBSD' or htype == 'Darwin':
-        result = run(
-            'nohup runbg_wrapper.sh %s %s >%s & sleep 0.1 ; echo "[1] $!" ' %
-            (wait, command, out_file), shell, pty)
+    if htype in ['Linux', 'FreeBSD', 'Darwin']:
+        result = c.run(
+            f'nohup runbg_wrapper.sh {wait} {command} > {out_file} & sleep 0.1 ; echo "[1] $!" ',
+            shell=shell, pty=pty, hide=True)
     else:
-        result = run(
-            'nohup runbg_wrapper.sh %s %s >%s & sleep 0.1 ; echo "[1] $!" ' %
-            (wait, command, out_file), shell, pty=False)
+        result = c.run(
+            f'nohup runbg_wrapper.sh {wait} {command} > {out_file} & sleep 0.1 ; echo "[1] $!" ',
+            shell=shell, pty=False, hide=True)
 
     # get pid from output
-    result = result.replace('\r', '')
+    result = result.stdout.strip().replace('\r', '')
     out_array = result.split('\n')
+    pid = None
     for line in out_array:
-        if line.find('[1] ') > -1:
+        if '[1]' in line:
             pid = line.split(" ")[-1]
             break
 
     # check it is actually running (XXX slightly delay this?)
     # if command executes very fast, this will cause task to fail, but quick
     # commands should not be run with runbg()
-    # run('kill -0 %s' % pid, pty=False)
+    c.run(f'kill -0 {pid}', pty=False, warn=True)
 
     return pid
 
@@ -85,21 +87,18 @@ def runbg(command, wait='0.0', out_file="/dev/null",
 ## Stop a process
 #  @param pid Process ID
 @task
-def stop_process(pid):
+def stop_process(c, pid):
     # first: kill child process(es) started started by process (e.g.
     # runbg_wrapper start child processes)
-    with settings(warn_only=True):
-        ret = run('pkill -P %s' % pid, pty=False)
-    if ret.return_code != 0:
-        puts(
-            'pkill may have failed because child process(es) terminated already')
+    with c.cd(''):
+        result = c.run(f'pkill -P {pid}', pty=False, warn=True)
+        if result.return_code != 0:
+            print('pkill may have failed because child process(es) terminated already')
 
-    # second: kill process (if we used runbg_wrapper then it should be dead
-    # already but who knows)
-    with settings(warn_only=True):
-        ret = run('kill %s' % pid, pty=False)
-    if ret.return_code != 0:
-        puts('kill may have failed because process terminated already')
+        # Second: kill the main process (if we used runbg_wrapper, it should be dead already but just to be safe)
+        result = c.run(f'kill {pid}', pty=False, warn=True)
+        if result.return_code != 0:
+            print('kill may have failed because process terminated already')
 
 
 # must import this down here to make circular dependency work (XXX move
@@ -112,35 +111,30 @@ from loggers import stop_tcp_logger
 # XXX stop processes in parallel (tried to implement this but didn't
 # work with fabric)
 @task
-def stop_processes(local_dir='.'):
+def stop_processes(c, local_dir='.'):
 
     # first: stop processes and tcp loggers
     for k, v in sorted(bgproc.get_proc_list_items()):
         if v.pid != '0':
             # call stop_tcp_logger to flush new_tcp_probe kernel buffer and stop its process
             # otherwise just stop_process  (e.g. if web10g is used)
-            if k.find('tcploggerprobe') > -1:
-                puts('calling stop_tcp_logger')
-                execute(stop_tcp_logger, local_dir=local_dir, hosts=[v.host])
-                execute(stop_process, v.pid, hosts=[v.host])  # kill process
-
+            if 'tcploggerprobe' in k:
+                print('Calling stop_tcp_logger')
+                stop_tcp_logger(c, local_dir=local_dir)
+                stop_process(c, v.pid)  # Kill process
             else:
-                execute(stop_process, v.pid, hosts=[v.host])  # kill process
+                stop_process(c, v.pid)  # Kill process
         else:
             # handle siftr and dummynet logger
-            if k.find('tcplogger') > -1:
-                execute(stop_tcp_logger, local_dir=local_dir, hosts=[v.host])
+            if 'tcplogger' in k:
+                stop_tcp_logger(c, local_dir=local_dir)
+
 
     # second: get log files
     for k, v in sorted(bgproc.get_proc_list_items()):
-        if v.pid != '0' and v.log != '':
-            if k.find('tcploggerprobe') < 0:
-                execute(
-                    getfile,
-                    file_name=v.log,
-                    local_dir=local_dir,
-                    hosts=[v.host])  # get log file
+        if v.pid != '0' and v.log:
+            if 'tcploggerprobe' not in k:
+                getfile(c, file_name=v.log, local_dir=local_dir)  # Get log file
 
     # finally clear process list
     bgproc.clear_proc_list()
-
