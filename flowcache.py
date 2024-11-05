@@ -30,8 +30,9 @@
 # $Id: flowcache.py,v 88f29c4f6e16 2016/06/06 03:58:21 sebastian $
 
 import os
-import config
-from fabric.api import task, warn, local, run, execute, abort, hosts, env
+#import config
+from fabric import Connection, Config
+from invoke import task, run, Context
 
 
 ## Cache file name
@@ -69,8 +70,8 @@ def append_flow_cache(fname, flows):
     if fname not in flow_cache:
         try:
             with open(CACHE_FILE_NAME, 'a') as f:
-                f.write('%s %s\n' % (fname, ';'.join(flows)))
-        except:
+                f.write(f'{fname} {";".join(flows)}\n')
+        except IOError:
             # if we can't write to the file then bad luck, user needs to fix permission,
             # but ensure we don't crash
             pass
@@ -90,4 +91,3 @@ def lookup_flow_cache(fname):
         return flow_cache[fname]
     else:
         return None 
-
