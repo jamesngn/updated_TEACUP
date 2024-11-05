@@ -31,7 +31,8 @@
 
 import os
 import config
-from fabric.api import task, warn, local, run, execute, abort, hosts, env
+from fabric import task
+from invoke import run, UnexpectedExit
 from internalutil import _list
 
 # 
@@ -64,11 +65,10 @@ def append_dir_cache(test_id, directory):
     if test_id not in dir_cache:
         try:
             with open(CACHE_FILE_NAME, 'a') as f:
-                f.write('%s %s\n' % (test_id, directory))
-        except:
-            # if we can't write to the file then bad luck, user needs to fix permission,
-            # but ensure we don't crash
-            pass
+                f.write(f'{test_id} {directory}\n')
+        except Exception as e:
+            # Handle file permission issues without crashing
+            print(f"Warning: Could not write to cache file: {e}")
 
 
 ## Perform cache lookup, if we have entry for test id return directory. Otherwise
@@ -114,7 +114,7 @@ def filter_duplicates(file_list):
 #  @param no_abort Set to false means abort if no matching files are found (default)
 #                  Set to true means don't abort if no matching files are found.
 #  @return List of files found 
-def get_testid_file_list(file_list_fname='', test_id='', file_ext='', pipe_cmd='',
+def get_testid_file_list(c, file_list_fname='', test_id='', file_ext='', pipe_cmd='',
                          search_dir='.', no_abort=False):
 
     file_list = []
@@ -129,10 +129,9 @@ def get_testid_file_list(file_list_fname='', test_id='', file_ext='', pipe_cmd='
         # if not in cache try to locate the directory based on the uname file
         if search_dir == '.':
             _files = _list(
-                local(
-                    'find -L %s -name "%s*uname.log*" -print | sed -e "s/^\.\///"%s' %
-                    (search_dir, test_id, pipe_cmd),
-                    capture=True))
+                run(
+                    f'find -L {search_dir} -name "{test_id}*uname.log*" -print | sed -e "s/^\.///"{pipe_cmd}',
+                    hide=True).stdout.splitlines())
             if len(_files) > 0:
                 search_dir = os.path.dirname(_files[0])
                 append_dir_cache(test_id, search_dir)
@@ -144,14 +143,13 @@ def get_testid_file_list(file_list_fname='', test_id='', file_ext='', pipe_cmd='
         test_id_arr = test_id.split(';')
 
         if len(test_id_arr) == 0 or test_id_arr[0] == '':
-            abort('Must specify test_id parameter')
+            raise ValueError('Must specify test_id parameter')
 
         for test_id in test_id_arr:
             _files = _list(
-                local(
-                    'find -L %s -name "%s*%s" -print | sed -e "s/^\.\///"%s' %
-                    (search_dir, test_id, file_ext, pipe_cmd),
-                    capture=True))
+                run(
+                    f'find -L {search_dir} -name "{test_id}*{file_ext}" -print | sed -e "s/^\.///"{pipe_cmd}',
+                    hide=True).stdout.splitlines())
 
             _files = filter_duplicates(_files)
  
@@ -166,21 +164,18 @@ def get_testid_file_list(file_list_fname='', test_id='', file_ext='', pipe_cmd='
             for fname in lines:
                 fname = fname.rstrip()
                 _files = _list(
-                    local(
-                        'find -L %s -name "%s" -print | sed -e "s/^\.\///"' %
-                        (search_dir, fname),
-                        capture=True))
+                    run(
+                        f'find -L {search_dir} -name "{fname}" -print | sed -e "s/^\.///"',
+                        hide=True).stdout.splitlines())
 
                 _files = filter_duplicates(_files)
 
                 file_list += _files
 
         except IOError:
-            abort('Cannot open experiment list file %s' % file_list_fname)
+            raise ValueError(f"Cannot open experiment list file {file_list_fname}")
 
     if not no_abort and len(file_list) == 0:
-        abort('Cannot find any matching data files.\n'
-              'Remove outdated teacup_dir_cache.txt if files were moved.') 
+        raise ValueError(f"Cannot find any matching data files.\nRemove outdated {CACHE_FILE_NAME} if files were moved.") 
 
     return file_list
-
