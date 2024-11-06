@@ -45,7 +45,7 @@ import csv
 import tempfile
 from subprocess import Popen, PIPE
 from fabric import task
-from fabric.connection import Connection
+from fabric2 import Connection
 import config
 from internalutil import mkdir_p
 from filefinder import get_testid_file_list
@@ -65,18 +65,26 @@ DATA_CORRECTED_FILE_EXT = '.tscorr'
 TMP_CONF_FILE = tempfile.mktemp(suffix='_oldconfig.py', dir='/tmp/')
 
 
-## Get file with time offsets for each experiment host (TASK)
-#  @param exp_list File that lists experiments to process
-#  @param test_id Experiment ID
-#  @param pkt_filter tcpdump filter string to filter braoadcast ping packets
-#  @param baseline_host Host we compute offset against (default is first router)
-#  @param out_dir Output directory for results
 @task
 def get_clock_offsets(c, exp_list='experiments_completed.txt',
                       test_id='', pkt_filter='',
                       baseline_host='',
                       out_dir=''):
-    "Get clock offsets for all hosts"
+    """
+    Get file with time offsets for each experiment host (TASK)
+
+    Args:
+        c (_type_): Fabric context object.
+        exp_list (str, optional): File that lists experiments to process. Defaults to 'experiments_completed.txt'.
+        test_id (str, optional): Experiment ID. Defaults to ''.
+        pkt_filter (str, optional): tcpdump filter string to filter braoadcast ping packets. Defaults to ''.
+        baseline_host (str, optional): Host we compute offset against (default is first router). Defaults to ''.
+        out_dir (str, optional): Output directory for results. Defaults to ''.
+
+    Raises:
+        Exit: If the experiment list fails to open
+        Exit: If no test IDs are provided
+    """
 
     if len(out_dir) > 0 and out_dir[-1] != '/':
         out_dir += '/'
@@ -86,12 +94,12 @@ def get_clock_offsets(c, exp_list='experiments_completed.txt',
             with open(exp_list) as f:
                 test_id_arr = f.readlines()
         except IOError:
-            raise RuntimeError('Cannot open file %s' % exp_list)
+            raise Exit('Cannot open file %s' % exp_list)
     else:
         test_id_arr = test_id.split(';')
 
     if len(test_id_arr) == 0 or test_id_arr[0] == '':
-        raise RuntimeError('Must specify test_id parameter')
+        raise Exit('Must specify test_id parameter')
 
     # specify complete tcpdump parameter list
     tcpdump_filter = '-tt -r - -n ' + pkt_filter
@@ -258,17 +266,26 @@ def get_clock_offsets(c, exp_list='experiments_completed.txt',
                 #f.close()
 
 
-## Adjust timestamps in interim data file (TASK)
-#  @param test_id Experiment ID
-#  @param file_name Interim data file
-#  @param host_name Host the timestamps are from in the interim data file
-#  @param sep Separator used in interim data file
-#  @param out_dir Output directory for results
-#  @return Name of file with corrected timestamps
 @task
 def adjust_timestamps(c, test_id='', file_name='', host_name='', sep=' ', out_dir=''):
-    "Adjust timestamps in data file based on observed clock offsets"
+    '''
+    Adjust timestamps in data file based on observed clock offsets.
 
+    Args:
+        c (Connection): Fabric connection object.
+        test_id (str, optional): Experiment ID. Defaults to ''.
+        file_name (str, optional): Interim data file. Defaults to ''.
+        host_name (str, optional): Host the timestamps are from in the interim data file. Defaults to ''.
+        sep (str, optional): Seperator used in interim data file. Defaults to ' '.
+        out_dir (str, optional): Output directory for results. Defaults to ''.
+
+    Raises:
+        Exit: If TEACUP cannot find the clock offset file.
+        Exit: If opening the clock offset file fails.
+
+    Returns:
+        str: Name of file with corrected timestamps.
+    '''
     # out_dir is the user-specified out_dir we pass on to get_clock_offsets()
     if len(out_dir) > 0 and out_dir[-1] != '/':
         out_dir += '/'
