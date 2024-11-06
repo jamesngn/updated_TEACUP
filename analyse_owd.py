@@ -112,29 +112,7 @@ def extract_pktloss(test_id='', out_dir='', replot_only='0', source_filter='',
     puts('\n[MAIN] COMPLETED extracting pktloss %s \n' % test_id)
 
 
-"Plot OWD of flows"
-## Plot OWD for flows
-#  @param test_id 
-#  @param out_dir 
-#  @param replot_only 
-#  @param source_filter 
-#  @param min_values 
-#  @param omit_const 
-#  @param ymin 
-#  @param ymax 
-#  @param lnames 
-#  @param stime 
-#               
-#  @param etime 
-#               (by default 0.0 = end of experiment)
-#  @param out_name 
-#  @param pdf_dir 
-#  @param plot_params 
-#  @param plot_script 
-#  @param burst_sep 
-#  @param sburst 
-#  @param eburst 
-#  @param seek_window A
+#TODO: ts_correct, anchor_map and owd_midpoint need descriptions
 @task
 def analyse_owd(test_id='', out_dir='', replot_only='0', source_filter='',
                 min_values='3', omit_const='0', ymin='0', ymax='0',
@@ -174,7 +152,7 @@ def analyse_owd(test_id='', out_dir='', replot_only='0', source_filter='',
             < 0,  plot OWD values relative to 1st OWD value after each abs(burst_sep) seconds since the first burst @ t = 0 (e.g. incast query/response bursts). Defaults to '0.0'.
         sburst (str, optional): Start plotting with burst N (bursts are numbered from 1). Defaults to '1'.
         eburst (str, optional): End plotting with burst N (bursts are numbered from 1). Defaults to '0'.
-        seek_window (str, optional): ssume you'll find next matching packet within seek_window of most recent match in the 'destination' capture file. Defaults to ''.
+        seek_window (str, optional): Assume you'll find next matching packet within seek_window of most recent match in the 'destination' capture file. Defaults to ''.
         anchor_map (str, optional): _description_. Defaults to ''.
         owd_midpoint (str, optional): _description_. Defaults to '0'.
 
