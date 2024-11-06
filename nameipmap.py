@@ -37,11 +37,15 @@ from fabric2 import Connection, task, run
 import config
 
 
-## Store host name IP mapping at the start of experiments (TASK) 
-#  @param out_dir Experiment directory
 @task
 def get_nameip_map(c, out_dir):
-    """Store host name to IP mapping in experiment directory"""
+    '''
+    (TASK) Store host name to IP mapping in experiment directory at the start of experiments
+
+    Args:
+        c (Connection): Fabric connection object
+        out_dir (str): Experiment directory
+    '''
     fname = f'{out_dir}/{out_dir}_nameip_map.log'
     with open(fname, 'w') as f:
         for name in sorted(config.TPCONF_hosts + config.TPCONF_router):
