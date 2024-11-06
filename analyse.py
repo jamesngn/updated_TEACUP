@@ -1959,16 +1959,11 @@ def analyse_all(c, exp_list='experiments_completed.txt', test_id='', out_dir='',
                     stime=stime, etime=etime, out_name=out_name, pdf_dir=pdf_dir,
                     ts_correct=ts_correct, plot_params=plot_params, plot_script=plot_script)
 
-
-## Extract incast response times from httperf files 
-## The extracted files have an extension of .rtimes. The format is CSV with the
-## columns:
-## 1. Request timestamp (seconds.microseconds)
-## 2. Burst number
-## 3. Response time (seconds)
-#  @param test_id Test ID prefix of experiment to analyse
-#  @param out_dir Output directory for results
-#  @param replot_only Don't extract data again that is already extracted
+"Extract incast response times for generated traffic flows"
+## 
+#  @param test_id 
+#  @param out_dir 
+#  @param replot_only 
 #  @param source_filter Filter on specific sources
 #  @param ts_correct '0' use timestamps as they are (default)
 #                    '1' correct timestamps based on clock offsets estimated
@@ -1982,7 +1977,30 @@ def analyse_all(c, exp_list='experiments_completed.txt', test_id='', out_dir='',
 #          to group IDs
 def _extract_incast(test_id='', out_dir='', replot_only='0', source_filter='',
                     ts_correct='1', sburst='1', eburst='0', slowest_only='0'):
-    "Extract incast response times for generated traffic flows"
+    """
+    Extract incast response times from httperf files 
+    The extracted files have an extension of .rtimes. The format is CSV with the columns:
+    1. Request timestamp (seconds.microseconds)
+    2. Burst number
+    3. Response time (seconds)
+
+    Args:
+        test_id (str, optional): Test ID prefix of experiment to analyse. Defaults to ''.
+        out_dir (str, optional): Output directory for results. Defaults to ''.
+        replot_only (str, optional): Don't extract data again that is already extracted. Defaults to '0'.
+        source_filter (str, optional): _description_. Defaults to ''.
+        ts_correct (str, optional): _description_. Defaults to '1'.
+        sburst (str, optional): _description_. Defaults to '1'.
+        eburst (str, optional): _description_. Defaults to '0'.
+        slowest_only (str, optional): _description_. Defaults to '0'.
+
+    Raises:
+        Exit: _description_
+        Exit: _description_
+
+    Returns:
+        _type_: _description_
+    """
 
     ifile_ext = 'httperf_incast.log.gz'
     ofile_ext = '.rtimes'
@@ -2131,11 +2149,6 @@ def extract_incast(test_id='', out_dir='', replot_only='0', source_filter='',
     print(f'\n[MAIN] COMPLETED extracting incast response times {test_id}\n')
 
 
-## 
-#  @param out_files 
-#  @param out_groups 
-#  @param mode 
-#  @return Map of flow names to file names, map of file names to group IDs
 def get_slowest_response_time(out_files, out_groups, mode=0):
     """
     Get slowest response time per burst
@@ -2151,7 +2164,7 @@ def get_slowest_response_time(out_files, out_groups, mode=0):
             Defaults to 0.
 
     Returns:
-        tuple: Modified out_files and out_groups
+        tuple: Map of flow names to file names, map of file names to group IDs
     """
 
     slowest = {}
