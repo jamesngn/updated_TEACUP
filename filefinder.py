@@ -46,7 +46,9 @@ dir_cache = {}
 
 ## Read cachfile if exists
 def read_dir_cache():
-
+    '''
+    Read cache file if it exists
+    '''
     if not os.path.isfile(CACHE_FILE_NAME):
         return
 
@@ -86,11 +88,16 @@ def lookup_dir_cache(test_id):
         return '.'
 
 
-## Filter out duplicates (if we accidentally have copies lying around in 
-#  different subdirectories)
-#  @param file_list List of file names
 def filter_duplicates(file_list):
+    '''
+    Filter out duplicates (if we accidentally have copies lying around in different subdirectories)
 
+    Args:
+        file_list (list[str]): List of file names
+
+    Returns:
+        list[str]: The filtered list
+    '''
     file_names = {}
     filtered_file_list = []
 
@@ -103,20 +110,33 @@ def filter_duplicates(file_list):
     return filtered_file_list
 
 
-## Return list of files that match search criteria
-#  @param file_list_fname Name of file containing a list of full log file names 
-#  @param test_id Semicolon separated list of test ids
-#  @param file_ext Characteristic rightmost part of file (file extension) we are
-#                  searching for
-#  @param pipe_cmd One or more shell command that are executed in pipe with the
-#                  find command
-#  @param search_dir Directory from where we start the search
-#  @param no_abort Set to false means abort if no matching files are found (default)
-#                  Set to true means don't abort if no matching files are found.
-#  @return List of files found 
 def get_testid_file_list(c, file_list_fname='', test_id='', file_ext='', pipe_cmd='',
                          search_dir='.', no_abort=False):
+    '''
+    Return list of files that match search criteria
 
+    Args:
+        file_list_fname (str, optional): Name of file containing a list of full log file names . Defaults to ''.
+        test_id (str, optional): Semicolon separated list of test ids. Defaults to ''.
+        file_ext (str, optional): Characteristic rightmost part of file (file extension) we are searching for. Defaults to ''.
+        pipe_cmd (str, optional): One or more shell command that are executed in pipe with the find command. Defaults to ''.
+        search_dir (str, optional): Directory from where we start the search. Defaults to '.'.
+        no_abort (bool, optional): 
+            Set to false means abort if no matching files are found (default)
+            
+            Set to true means don't abort if no matching files are found.
+            
+            Defaults to False.
+
+    Raises:
+        Exit: If no test ids are provided
+        Exit: If `file_list_fname` fails to open
+        Exit: If the provided file names cannot be found
+
+    Returns:
+        list: List of matching files found
+    '''
+    
     file_list = []
 
     if pipe_cmd != '':
