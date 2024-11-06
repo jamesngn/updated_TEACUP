@@ -82,14 +82,27 @@ def extract_owd(test_id='', out_dir='', replot_only='0', source_filter='',
     puts('\n[MAIN] COMPLETED extracting OWDs %s \n' % test_id)
 
 
-
 ## Extract PKTLOSS for flows
 ## SEE _extract_owd_pktloss()
 @task
 def extract_pktloss(test_id='', out_dir='', replot_only='0', source_filter='',
                 ts_correct='1', burst_sep='0.0', sburst='1', eburst='0',
                 seek_window='', log_loss='2'):
-    "Extract per-flow packet loss events vs time (or cumlative over time)"
+    """
+    Extract per-flow packet loss events vs time (or cumlative over time)
+
+    Args:
+        test_id (str, optional): _description_. Defaults to ''.
+        out_dir (str, optional): _description_. Defaults to ''.
+        replot_only (str, optional): _description_. Defaults to '0'.
+        source_filter (str, optional): _description_. Defaults to ''.
+        ts_correct (str, optional): _description_. Defaults to '1'.
+        burst_sep (str, optional): _description_. Defaults to '0.0'.
+        sburst (str, optional): _description_. Defaults to '1'.
+        eburst (str, optional): _description_. Defaults to '0'.
+        seek_window (str, optional): _description_. Defaults to ''.
+        log_loss (str, optional): _description_. Defaults to '2'.
+    """
 
     _extract_owd_pktloss(test_id, out_dir, replot_only, source_filter,
                     ts_correct, burst_sep, sburst, eburst,
