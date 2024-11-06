@@ -71,8 +71,11 @@ from ctypes import *
 def extract_owd(test_id='', out_dir='', replot_only='0', source_filter='',
                 ts_correct='1', burst_sep='0.0', sburst='1', eburst='0',
                 seek_window='', anchor_map='', owd_midpoint='0'):
-    "Extract OWD of flows"
-
+    """
+    Extract OWD of flows.
+    SEE _extract_owd_pktloss()
+    """
+    
     _extract_owd_pktloss(test_id, out_dir, replot_only, source_filter,
                     ts_correct, burst_sep, sburst, eburst,
                     seek_window, log_loss='0',
