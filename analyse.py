@@ -2131,13 +2131,28 @@ def extract_incast(test_id='', out_dir='', replot_only='0', source_filter='',
     print(f'\n[MAIN] COMPLETED extracting incast response times {test_id}\n')
 
 
-## Get slowest response time per burst
-#  @param out_files List of data files
-#  @param out_groups Map of files to groups
-#  @param mode '0' slowest response time
-#              '1' time between first request and last response finished
+## 
+#  @param out_files 
+#  @param out_groups 
+#  @param mode 
 #  @return Map of flow names to file names, map of file names to group IDs
 def get_slowest_response_time(out_files, out_groups, mode=0):
+    """
+    Get slowest response time per burst
+
+    Args:
+        out_files (_type_): List of data files
+        out_groups (_type_): Map of files to groups
+        mode (int, optional): 
+            '0' slowest response time
+            
+            '1' time between first request and last response finished. 
+            
+            Defaults to 0.
+
+    Returns:
+        tuple: Modified out_files and out_groups
+    """
 
     slowest = {}
     earliest = {}
