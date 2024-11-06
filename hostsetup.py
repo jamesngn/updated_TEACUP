@@ -27,6 +27,11 @@
 # Host setup fucntions
 #
 # $Id: hostsetup.py,v 3b086222a74b 2017/02/20 09:26:27 gja $
+# 
+# Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+#         
+# 
 
 import sys
 import time

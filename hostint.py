@@ -28,6 +28,11 @@
 # Functions to determine the network interface based on an IP address
 #
 # $Id: hostint.py,v e7ea179b29d8 2015/05/25 04:28:23 sebastian $
+# 
+# Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+#         
+# 
 
 import socket
 import config

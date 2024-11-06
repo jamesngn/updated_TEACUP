@@ -29,6 +29,11 @@
 # Analyse experiment data -- time series plots
 #
 # $Id: analyse.py,v ccc2b17c6f89 2018/02/07 19:42:21 garmitage $
+#
+# Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+# 
+#
 
 import os
 import errno

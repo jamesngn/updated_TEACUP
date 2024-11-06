@@ -28,6 +28,11 @@
 # Print version number and revision info
 #
 # $Id: version.py,v ebb0800b2910 2015/05/26 01:07:47 sebastian $
+# 
+# Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+#         
+# 
 
 import os
 import sys

@@ -28,6 +28,11 @@
 # Logger start/stop methods
 #
 # $Id: loggers.py,v 94ce5179795c 2015/09/28 06:44:10 s $
+# 
+# Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+#         
+# 
 
 import re
 import time

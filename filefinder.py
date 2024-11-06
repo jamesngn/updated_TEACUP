@@ -28,6 +28,11 @@
 # Functions to find files (used by analysis functions) 
 #
 # $Id: filefinder.py,v d884760177c8 2015/11/05 09:46:53 s $
+# 
+# Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+#         
+# 
 
 import os
 import config

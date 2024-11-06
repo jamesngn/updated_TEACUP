@@ -28,6 +28,11 @@
 # Functions to cache flows of experiments 
 #
 # $Id: flowcache.py,v 88f29c4f6e16 2016/06/06 03:58:21 sebastian $
+# 
+# Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+#         
+# 
 
 import os
 #import config

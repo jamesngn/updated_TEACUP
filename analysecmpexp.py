@@ -29,6 +29,12 @@
 # Analyse experiment data -- functions for comparing metrics across experiments
 #
 # $Id: analysecmpexp.py,v 1920bf13a9bf 2018/02/07 09:03:39 garmitage $
+# 
+#  # Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+#         
+# 
+
 
 import os
 import errno

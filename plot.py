@@ -29,6 +29,11 @@
 # Plotting functions
 #
 # $Id: plot.py,v 60196b1683ea 2016/06/03 10:20:04 s $
+# 
+# Copyright (c) 2024 
+# Author: Mitchell Lowe (101607237@student.swin.edu.au)
+#         
+# 
 
 import os
 import errno
