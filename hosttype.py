@@ -38,12 +38,22 @@ host_os = {}
 ctrl_host_os = ''
 
 
-## Get host type and populate host_os, ctrl_host_os
-#  @param host Host IP or name
-#  @param for_local If '0' get type of remote host,
-#                   if '1' get type of local host (where we execute script)
-#  @return Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
 def get_type_cached(host='', for_local='0'):
+    '''
+    Get host type and populate `host_os`, `ctrl_host_os`
+
+    Args:
+        host (str, optional): Host IP or name. Defaults to ''.
+        for_local (str, optional): 
+            If '0' get type of remote host
+            
+            If '1' get type of local host (where we execute script). 
+            
+            Defaults to '0'.
+
+    Returns:
+        str: Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
+    '''
     global host_os
     global ctrl_host_os
 
