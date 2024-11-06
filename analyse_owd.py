@@ -112,45 +112,75 @@ def extract_pktloss(test_id='', out_dir='', replot_only='0', source_filter='',
     puts('\n[MAIN] COMPLETED extracting pktloss %s \n' % test_id)
 
 
-
+"Plot OWD of flows"
 ## Plot OWD for flows
-#  @param test_id Test ID prefix of experiment to analyse
-#  @param out_dir Output directory for results
-#  @param replot_only Don't extract data again, just redo the plot
-#  @param source_filter Filter on specific sources
-#  @param min_values Minimum number of data points in file, if fewer points
-#                    the file is ignored
-#  @param omit_const '0' don't omit anything,
-#                    '1' omit any series that are 100% constant
-#                       (e.g. because there was no data flow)
-#  @param ymin Minimum value on y-axis
-#  @param ymax Maximum value on y-axis
-#  @param lnames Semicolon-separated list of legend names
-#  @param stime Start time of plot window in seconds
-#               (by default 0.0 = start of experiment)
-#  @param etime End time of plot window in seconds
+#  @param test_id 
+#  @param out_dir 
+#  @param replot_only 
+#  @param source_filter 
+#  @param min_values 
+#  @param omit_const 
+#  @param ymin 
+#  @param ymax 
+#  @param lnames 
+#  @param stime 
+#               
+#  @param etime 
 #               (by default 0.0 = end of experiment)
-#  @param out_name Name prefix for resulting pdf file
-#  @param pdf_dir Output directory for pdf files (graphs), if not specified it is
-#                 the same as out_dir
-#  @param plot_params Set env parameters for plotting
-#  @param plot_script Specify the script used for plotting, must specify full path
-#  @param burst_sep '0' plot OWD values as they come, relative to 1st OWD value
-#                 > '0' plot OWD values relative to 1st OWD value after gaps
-#                       of more than burst_sep milliseconds (e.g. incast query/response bursts)
-#                 < 0,  plot OWD values relative to 1st OWD value after each abs(burst_sep)
-#                       seconds since the first burst @ t = 0 (e.g. incast query/response bursts)
-#  @param sburst Start plotting with burst N (bursts are numbered from 1)
-#  @param eburst End plotting with burst N (bursts are numbered from 1)
-#  @param seek_window Assume you'll find next matching packet within seek_window of most recent match
-#               in the 'destination' capture file
+#  @param out_name 
+#  @param pdf_dir 
+#  @param plot_params 
+#  @param plot_script 
+#  @param burst_sep 
+#  @param sburst 
+#  @param eburst 
+#  @param seek_window A
 @task
 def analyse_owd(test_id='', out_dir='', replot_only='0', source_filter='',
                 min_values='3', omit_const='0', ymin='0', ymax='0',
                 lnames='', stime='0.0', etime='0.0', out_name='', pdf_dir='',
                 ts_correct='1',plot_params='', plot_script='', burst_sep='0.0',
                 sburst='1', eburst='0', seek_window='', anchor_map='', owd_midpoint='0'):
-    "Plot OWD of flows"
+    """
+    Plot OWD of flows
+
+    Args:
+        test_id (str, optional): Test ID prefix of experiment to analyse. Defaults to ''.
+        out_dir (str, optional): Output directory for results. Defaults to ''.
+        replot_only (str, optional): Don't extract data again, just redo the plot. Defaults to '0'.
+        source_filter (str, optional): Filter on specific sources. Defaults to ''.
+        min_values (str, optional): Minimum number of data points in file, if fewer points the file is ignored. Defaults to '3'.
+        omit_const (str, optional): 
+            '0' don't omit anything
+
+            '1' omit any series that are 100% constant (e.g. because there was no data flow)
+            
+            Defaults to '0'.
+        ymin (str, optional): Minimum value on y-axis. Defaults to '0'.
+        ymax (str, optional): Maximum value on y-axis. Defaults to '0'.
+        lnames (str, optional): Semicolon-separated list of legend names. Defaults to ''.
+        stime (str, optional): Start time of plot window in seconds. Defaults to '0.0' (start of experiment).
+        etime (str, optional): End time of plot window in seconds. Defaults to '0.0' (end of experiment).
+        out_name (str, optional): Name prefix for resulting pdf file. Defaults to ''.
+        pdf_dir (str, optional): Output directory for pdf files (graphs), if not specified it is the same as out_dir. Defaults to ''.
+        ts_correct (str, optional): _description_. Defaults to '1'.
+        plot_params (str, optional): Set env parameters for plotting. Defaults to ''.
+        plot_script (str, optional): Specify the script used for plotting, must specify full path. Defaults to ''.
+        burst_sep (str, optional): 
+            '0' plot OWD values as they come, relative to 1st OWD value
+
+            \> '0' plot OWD values relative to 1st OWD value after gaps of more than burst_sep milliseconds (e.g. incast query/response bursts)
+            
+            < 0,  plot OWD values relative to 1st OWD value after each abs(burst_sep) seconds since the first burst @ t = 0 (e.g. incast query/response bursts). Defaults to '0.0'.
+        sburst (str, optional): Start plotting with burst N (bursts are numbered from 1). Defaults to '1'.
+        eburst (str, optional): End plotting with burst N (bursts are numbered from 1). Defaults to '0'.
+        seek_window (str, optional): ssume you'll find next matching packet within seek_window of most recent match in the 'destination' capture file. Defaults to ''.
+        anchor_map (str, optional): _description_. Defaults to ''.
+        owd_midpoint (str, optional): _description_. Defaults to '0'.
+
+    Raises:
+        Exit: If ts_correct = 0
+    """
     
     # Note we allow ts_correct as a parameter for syntactic similarity to other
     # analyse_* tasks, but abort with warning if user tries explicitly to
