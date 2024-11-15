@@ -58,7 +58,15 @@ def mkdir_p(path):
     except OSError as exc:
         if exc.errno != errno.EEXIST:
             raise
+        
+def mkdir_p_v2(path: str):
+    """mkdir -p in python
 
+    Args:
+        path (str): Directory to create
+    """
+    print(f"mkdir_p_v2 with {path}")
+    os.makedirs(path, exist_ok=True)
 
 ## Make sure the specified directory name ends with a trailing slash
 #  @param path Directory
@@ -67,3 +75,16 @@ def valid_dir(path):
         path += '/'
 
     return path
+
+
+# Helper function 
+from fabric2 import Connection, SerialGroup
+
+# Define a helper function for executing tasks on a group of hosts
+def execute_on_group(group, task_func, *args, **kwargs):
+    """
+    Execute a task on a group of hosts and pass args/kwargs to the task.
+    """
+    for conn in group:
+        task_func(conn, *args, **kwargs)
+

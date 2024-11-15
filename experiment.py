@@ -37,14 +37,19 @@ import datetime
 import re
 import socket
 import glob, os
-from fabric.api import task, warn, put, puts, get, local, run, execute, \
+
+from fabric.api import task as fabric_task, warn, put, puts, get, local, run, execute, \
     settings, abort, hosts, env, runs_once, parallel
+
 from fabric.network import disconnect_all
+
+from invoke import run
+from invoke.exceptions import Exit
 
 from functools import cmp_to_key
 
 import config
-from internalutil import mkdir_p
+from internalutil import mkdir_p, mkdir_p_v2
 from bgproc import file_cleanup, print_proc_list
 from runbg import stop_processes
 from hosttype import get_type_cached, get_type, clear_type_cache
@@ -65,6 +70,15 @@ from trafficgens import start_iperf, start_ping, \
     start_nttcp, start_bc_ping, \
     start_httperf_incast_n, start_fps_game, \
     start_dash_streaming_dashjs, start_nginx_server
+    
+# UPDATED:
+from fabric2 import Connection, task as fabric_v2_task, SerialGroup, Config
+from hostsetup import init_host_v2, init_ecn_v2, init_cc_algo_v2, init_router_v2,init_hosts_v2, init_os_hosts_v2, init_host_custom_v2, init_topology_switch_v2, init_topology_host_v2
+from loggers import log_config_params_v2, log_host_tcp_v2
+from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2,  sanity_checks_v2, get_host_info_v2
+from routersetup import init_pipe_v2, show_pipes_v2
+
+from internalutil import execute_on_group
 
 
 ## Collect all the arguments
@@ -137,6 +151,42 @@ def config_router_queues(queue_spec, router, **kwargs):
         execute(*_nargs, **_kwargs)
 
 
+def config_router_queues_v2(queue_spec: list, router: list, **kwargs):
+    """
+    Configure queues on one or multiple routers using the specified queue specification.
+    
+    Args:
+        queue_spec (list): List of tuples, where each tuple contains a queue ID and parameters.
+                          Example: [(1, 'param1=value1, param2=value2'), (2, 'param3=value3')]
+        router (list): List of router host addresses or hostnames.
+                       Example: ['router1.example.com', 'router2.example.com']
+        kwargs (dict): Additional keyword arguments for queue configuration.
+    """
+    
+    # Iterate over each router in the list
+    for router_host in router:
+        conn = config.host_to_conn[router_host]  # Assuming config.host_to_conn is defined elsewhere
+
+        # Iterate over the queue specifications
+        for c, v in queue_spec:
+            # Replace placeholders (V_* variables) in the configuration string with actual parameters from kwargs
+            v = re.sub("(V_[a-zA-Z0-9_-]*)", "_param('\\1', kwargs)", v)
+
+            # Trim whitespace at both ends of the string
+            v = v.strip()
+
+            # Prepend the task name (init_pipe) to the string with the counter value (c)
+            v = f'conn, "{str(c)}", {v}'
+
+            # append the host to execute (router)
+            if v[-1] != ',':
+                v = v + ','
+
+            _nargs, _kwargs = eval('_args(%s)' % v)
+            init_pipe_v2(*_nargs, **_kwargs)
+
+
+
 ## Run experiment
 #  @param test_id Experiment ID
 #  @param test_id_pfx Experiment ID prefix
@@ -181,7 +231,9 @@ def run_experiment(test_id='', test_id_pfx='', *args, **kwargs):
         execute(
             init_os_hosts,
             file_prefix=test_id_pfx,
-            local_dir=test_id_pfx)  # reboot
+            local_dir=test_id_pfx,
+            hosts=config.TPCONF_router +
+            config.TPCONF_hosts)  # reboot
         clear_type_cache()  # clear host type cache
         disconnect_all()  # close all connections
         time.sleep(30)  # give hosts some time to settle down (after reboot)
@@ -261,11 +313,11 @@ def run_experiment(test_id='', test_id_pfx='', *args, **kwargs):
         **kwargs)
 
     # start all loggers
-    # execute(
-    #     start_loggers,
-    #     file_prefix=test_id,
-    #     local_dir=test_id_pfx,
-    #     remote_dir=config.TPCONF_remote_dir)
+    execute(
+        start_loggers,
+        file_prefix=test_id,
+        local_dir=test_id_pfx,
+        remote_dir=config.TPCONF_remote_dir)
 
     # Start broadcast ping and loggers (if enabled)
     try: 
@@ -389,3 +441,254 @@ def run_experiment(test_id='', test_id_pfx='', *args, **kwargs):
     # done
     puts('\n[MAIN] COMPLETED experiment %s \n' % test_id)
 
+
+
+def run_experiment_v2(test_id: str = '', test_id_pfx: str = '', **kwargs):
+    """Run a network experiment with the specified parameters.
+
+    Args:
+        c (Connection): The Fabric Connection object for remote command execution.
+        test_id (str): The experiment ID.
+        test_id_pfx (str): The experiment ID prefix (directory where experiment files will be saved).
+        *args: Additional positional arguments.
+        **kwargs: Additional keyword arguments.
+        
+    Keyword Args:
+        do_init_os (str): Whether to initialize the OS. Defaults to '1'.
+        ecn (str): Explicit Congestion Notification setting. Defaults to '0'.
+        tcp_cc_algo (str): TCP congestion control algorithm. Defaults to 'default'.
+        duration (str): Duration of the experiment (mandatory).
+
+    Raises:
+        Exit: If no duration is specified for the experiment.
+    """
+    
+    print(f'\n[MAIN] Running experiment {test_id} \n')
+    
+    do_init_os = kwargs.get('do_init_os', '1')
+    ecn = kwargs.get('ecn', '0')
+    tcp_cc_algo = kwargs.get('tcp_cc_algo', 'default')
+    duration = kwargs.get('duration', '')
+    
+    
+    if not duration:
+        raise Exit('No experiment duration specified')
+    
+    # Create subdirectory for test ID prefix
+    mkdir_p_v2(test_id_pfx)
+    
+    # remove <test_id>* files in <test_id_pfx> directory if exists
+    file_pattern = os.path.join(test_id_pfx, f"{test_id}_*")
+
+    for f in glob.glob(file_pattern):
+        os.remove(f)
+        
+     # Log experiment in the started list
+    run(f'echo "{test_id}" >> experiments_started.txt')
+
+    print(f'\n[MAIN] Starting experiment {test_id} \n')
+    
+    
+    # Optional TFTP boot directory
+    tftpboot_dir = getattr(config, 'TPCONF_tftpboot_dir', '')
+    
+    #TODO: check this tftpboot_dir and do_init_os
+    # if tftpboot_dir and do_init_os == '1':
+    
+
+    #TODO: add if tftpboot_dir != '' and do_init_os == '1':
+    if tftpboot_dir != '' and do_init_os == '1':
+        # for host in config.all_hosts:
+        #     conn : Connection = config.host_to_conn[host]
+        #     get_host_info_v2(conn, netint='0')
+        #     init_os_hosts_v2(conn,file_prefix=test_id_pfx, local_dir=test_id_pfx, )
+        
+        [get_host_info_v2(config.host_to_conn[host], netint='0') for host in config.all_hosts]
+        [init_os_hosts_v2(config.host_to_conn[host], file_prefix=test_id_pfx, local_dir=test_id_pfx) for host in config.all_hosts]
+
+        clear_type_cache()  # clear host type cache
+        disconnect_all()  # close all connections
+        time.sleep(30)  # give hosts some time to settle down (after reboot)
+    
+    try:
+        switch = '' 
+        port_prefix = ''
+        port_offset = 0
+        try:
+            switch = config.TPCONF_topology_switch
+            port_prefix = config.TPCONF_topology_switch_port_prefix
+            port_offset = config.TPCONF_topology_switch_port_offset
+        except AttributeError:
+            pass 
+
+        if config.TPCONF_config_topology == '1' and do_init_os == '1': 
+            # we cannot call init_topology directly, as it is decorated with
+            # runs_once. in experiment.py we have empty host list whereas if we
+            # run init_topology from command line we have the -H host list. executing
+            # an runs_once task with empty host list (hosts set in execute call), it
+            # will only be executed for the first host, which is not what we
+            # want. in contrast if we have a host list in context, execute will be
+            # executed once for each host (hence we need runs_once when called from
+            # the command line).
+
+            # sequentially configure switch
+            [init_topology_switch_v2(config.host_to_conn[host], switch, port_prefix, port_offset) for host in config.all_hosts]
+            # configure hosts in parallel
+            [init_topology_host_v2(config.host_to_conn[host]) for host in config.all_hosts]
+    except AttributeError:
+        pass
+    
+    file_cleanup(test_id_pfx)  # remove any .start files
+    [get_host_info_v2(config.host_to_conn[host], netmac='0') for host in config.all_hosts]
+    [sanity_checks_v2(config.host_to_conn[host]) for host in config.all_hosts]
+    [init_hosts_v2(config.host_to_conn[host], **kwargs) for host in config.all_hosts]        
+        
+    # first is the legacy case with single router and single queue definitions
+    # second is the multiple router case with several routers and several queue
+    # definitions
+    if isinstance(config.TPCONF_router_queues, list):
+        # start queues/pipes
+        config_router_queues_v2(config.TPCONF_router_queues, config.TPCONF_router, 
+                             **kwargs)
+        # show pipe setup
+        [show_pipes_v2(config.host_to_conn[host]) for host in config.TPCONF_router]
+    elif isinstance(config.TPCONF_router_queues, dict):
+        for router in config.TPCONF_router_queues.keys():
+            # start queues/pipes for router r
+            config_router_queues_v2(config.TPCONF_router_queues[router], [router], 
+                                 **kwargs)
+            # show pipe setup
+            [show_pipes_v2(config.host_to_conn[host]) for host in [router]]
+                
+    log_config_params_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)
+    log_host_tcp_v2(file_prefix=test_id, local_dir=test_id_pfx,hosts=['MAIN'], **kwargs)
+    
+    #TODO: do function for starting all loggers
+    
+    try: 
+        if config.TPCONF_bc_ping_enable == '1':
+            # for multicast need IP of outgoing interface
+            # which is router's control interface
+            use_multicast = socket.gethostbyname(
+                    config.TPCONF_router[0].split(':')[0])
+ 
+            # get configured broadcast or multicast address
+            bc_addr = '' 
+            try:
+                bc_addr = config.TPCONF_bc_ping_address
+            except AttributeError:
+                # use default multicast address
+                bc_addr = '224.0.1.199'
+            
+            #TODO: add start_bc_ping_loggers_v2
+            execute(
+                start_bc_ping_loggers,
+                file_prefix=test_id,
+                local_dir=test_id_pfx,
+                remote_dir=config.TPCONF_remote_dir,
+                bc_addr=bc_addr)
+            
+            try:
+                bc_ping_rate = config.TPCONF_bc_ping_rate
+            except AttributeError:
+                bc_ping_rate = '1'
+                
+            # start the broadcst ping on the first router
+            # TODO: add start_bc_ping_v2
+            execute(start_bc_ping,
+                file_prefix=test_id,
+                local_dir=test_id_pfx,
+                remote_dir=config.TPCONF_remote_dir,
+                bc_addr=bc_addr,
+                rate=bc_ping_rate,
+                use_multicast=use_multicast,
+                hosts = [config.TPCONF_router[0]])
+                
+    except AttributeError:
+        pass
+
+    # start traffic generators
+    sync_delay = 5.0
+    start_time = datetime.datetime.now()
+    total_duration = float(duration) + sync_delay
+    for t, c, v in sorted(config.TPCONF_traffic_gens, key=cmp_to_key(_cmp_timekeys)):
+
+        try:
+            # delay everything to have synchronised start
+            next_time = float(t) + sync_delay
+        except ValueError:
+            abort('Traffic generator entry key time must be a float')
+
+        # add the kwargs parameter to the call of _param
+        v = re.sub("(V_[a-zA-Z0-9_-]*)", "_param('\\1', kwargs)", v)
+
+        # trim white space at both ends
+        v = v.strip()
+
+        if v[-1] != ',':
+            v = v + ','
+        # add counter parameter
+        v += ' counter="%s"' % c
+        # add file prefix parameter
+        v += ', file_prefix=test_id'
+        # add remote dir
+        v += ', remote_dir=\'%s\'' % config.TPCONF_remote_dir
+        # add test id prefix to put files into correct directory
+        v += ', local_dir=\'%s\'' % test_id_pfx
+        # we don't need to check for presence of tools inside start functions
+        v += ', check="0"'
+
+        # set wait time until process is started
+        now = datetime.datetime.now()
+        dt_diff = now - start_time
+        sec_diff = (dt_diff.days * 24 * 3600 + dt_diff.seconds) + \
+            (dt_diff.microseconds / 1000000.0)
+        if next_time - sec_diff > 0:
+            wait = str(next_time - sec_diff)
+        else:
+            wait = '0.0'
+        v += ', wait="' + wait + '"'
+
+        _nargs, _kwargs = eval('_args(%s)' % v)
+
+        # get traffic generator duration
+        try:
+            traffic_duration = _kwargs ['duration']
+        except:
+            traffic_duration = 0
+        # find the largest total_duration possible
+        if next_time + traffic_duration > total_duration:
+            total_duration = next_time + traffic_duration
+
+        execute(*_nargs, **_kwargs)
+
+    # print process list
+    print_proc_list()
+    
+    # wait until finished (add additional 5 seconds to be sure)
+    total_duration = float(total_duration) + 5.0
+    puts('\n[MAIN] Running experiment for %i seconds\n' % int(total_duration))
+    time.sleep(total_duration)
+    
+    # shut everything down and get log data
+    execute(stop_processes, local_dir=test_id_pfx)
+    execute(
+        log_queue_stats,
+        file_prefix=test_id,
+        local_dir=test_id_pfx,
+        hosts=config.TPCONF_router)
+
+    # log test id in completed list
+    local('echo "%s" >> experiments_completed.txt' % test_id)
+
+    # kill any remaining processes
+    execute(kill_old_processes,
+            hosts=config.TPCONF_router +
+            config.TPCONF_hosts)
+
+    # done
+    puts('\n[MAIN] COMPLETED experiment %s \n' % test_id)
+
+    
+    
+            

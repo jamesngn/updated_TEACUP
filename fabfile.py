@@ -38,7 +38,7 @@ import os
 import importlib.util
 import datetime
 from fabric.api import execute, env, abort, local, task as fabric_task
-from fabric2 import Connection, task as fabric_v2_task
+
 
 # this will print paramiko errors on stderr
 import logging
@@ -74,16 +74,16 @@ except AttributeError:
 # as batch, i.e. if they were all added together in one version, they
 # can be in the same try clause
 
-from experiment import run_experiment
 from hosttype import get_type
+from experiment import run_experiment, run_experiment_v2
 from hostint import get_netint
 from hostmac import get_netmac
-from sanitychecks import check_host, check_connectivity, kill_old_processes, \
-    sanity_checks, get_host_info, check_config, check_time_sync
+from sanitychecks import check_host, check_connectivity,  kill_old_processes,  \
+    sanity_checks,  get_host_info, check_config, check_time_sync
 from util import exec_cmd, authorize_key, copy_file
 from hostsetup import init_host, init_ecn, init_cc_algo, init_router, \
         init_hosts, init_os, power_cycle, init_host_custom
-
+        
 try:
     from hostsetup import init_topology
 except ImportError:
@@ -186,6 +186,23 @@ try:
 except ImportError:
     pass
 
+
+
+# fabric 2 task list:
+from fabric2 import Connection, task as fabric_v2_task
+from invoke.exceptions import Exit
+
+from hosttype import get_type_v2
+from hostint import get_netint_v2
+from hostmac import get_netmac_v2
+
+from sanitychecks import check_connectivity_v2, check_host_v2, kill_old_processes_v2, sanity_checks_v2, check_time_sync_v2, get_host_info_v2
+
+from hostsetup import init_os_v2, init_os_hosts_v2
+
+from routersetup import init_pipe_v2, show_pipes_v2
+
+
 ## Set to zero if we don't need OS initialisation anymore
 # XXX this is a bit ugly as a global
 do_init_os = '1'
@@ -220,6 +237,34 @@ def _fill_missing(*nargs, **kwargs):
         kwargs['do_init_os'] = do_init_os
 
     return nargs, kwargs
+
+def _fill_missing_v2( **kwargs):
+    """
+    Set all basic parameters that are not yet set to their default values.
+
+    Args:
+        kwargs (dict): Keyword arguments.
+
+    Returns:
+        tuple: Extended nargs and kwargs with missing values filled in.
+    """
+    
+    global do_init_os
+    
+    # Populate missing keyword arguments from the configuration defaults
+    for key, default_value in config.TPCONF_variable_defaults.items():
+        kwargs.setdefault(key, default_value)
+
+    # Compatibility: Map internal parameter names to the external ones
+    kwargs['ecn'] = kwargs.get('V_ecn', kwargs.get('ecn'))
+    kwargs['tcp_cc_algo'] = kwargs.get('V_tcp_cc_algo', kwargs.get('tcp_cc_algo'))
+    kwargs['duration'] = kwargs.get('V_duration', kwargs.get('duration'))
+
+    # Set special defaults if they are not already set
+    kwargs.setdefault('run', 0)
+    kwargs.setdefault('do_init_os', do_init_os)
+
+    return (), kwargs
 
 
 ## Check if experiment has been done before based on
@@ -283,11 +328,55 @@ def run_experiment_single(test_id='', *nargs, **kwargs):
     execute(run_experiment, test_id, test_id, *_nargs, **_kwargs)
     
 @fabric_v2_task
-def who_am_i(c:Connection):
-    c = Connection('controlhost', connect_kwargs={"password": "password",},)
-    c.run('whoami')
-    c.run('hostname')
+def run_experiment_single_v2(c: Connection, test_id='', ecn='', duration='', delay='', loss='', tcp_cc_algo='', down_rate='', up_rate='', aqm='', bsize=''):
+    """
+    Run a single experiment (TASK)
 
+    Args:
+        c (Connection): Fabric Connection object
+        test_id (str, optional): TEST ID prefix. Defaults to ''.
+        ecn (str, optional): Explicit Congestion Notification setting.
+        duration (str, optional): Experiment duration.
+        delay (str, optional): Network delay.
+        loss (str, optional): Packet loss rate.
+        tcp_cc_algo (str, optional): TCP Congestion Control algorithm.
+        down_rate (str, optional): Download rate.
+        up_rate (str, optional): Upload rate.
+        aqm (str, optional): AQM algorithm.
+        bsize (str, optional): Buffer size.
+    """
+    
+    global do_init_os
+    
+    # Set test_id if not provided
+    if test_id == '':
+        test_id = config.TPCONF_test_id
+    
+    # Initialize kwargs with default values from TPCONF_variable_defaults
+    kwargs = {key: default_value for key, default_value in config.TPCONF_variable_defaults.items()}
+    
+    # Override parameters with provided arguments or defaults
+    kwargs['ecn'] = ecn if ecn else kwargs.get('V_ecn', '0')
+    kwargs['duration'] = duration if duration else kwargs.get('V_duration', '')
+    kwargs['delay'] = delay if delay else kwargs.get('V_delay', '')
+    kwargs['loss'] = loss if loss else kwargs.get('V_loss', '')
+    kwargs['tcp_cc_algo'] = tcp_cc_algo if tcp_cc_algo else kwargs.get('V_tcp_cc_algo', 'default')
+    kwargs['down_rate'] = down_rate if down_rate else kwargs.get('V_down_rate', '')
+    kwargs['up_rate'] = up_rate if up_rate else kwargs.get('V_up_rate', '')
+    kwargs['aqm'] = aqm if aqm else kwargs.get('V_aqm', '')
+    kwargs['bsize'] = bsize if bsize else kwargs.get('V_bsize', '')
+    kwargs['do_init_os'] = do_init_os
+    kwargs['run'] = 0
+
+    # Ensure that mandatory parameters like 'V_duration' are provided
+    if not kwargs['duration']:
+        raise Exit('No duration specified in defaults or provided.')
+
+    # Log the start of the experiment and run it
+    run_experiment_v2(test_id, test_id, **kwargs)
+
+    
+    
 
 ## Generic function for varying a parameter
 #  @param test_id Test ID

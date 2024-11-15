@@ -38,9 +38,8 @@ import os
 import re
 import datetime
 import config
-from fabric2 import Connection, task as task2
-from fabric.api import task, warn, local, run, execute, abort, hosts, \
-    env, settings, parallel, serial, puts, put
+from fabric.api import task as fabric_task, warn, local, run, execute, abort, hosts, \
+    env, settings, parallel, serial, puts, put, run
 from hosttype import get_type_cached
 from hostint import get_netint_cached, get_netint_windump_cached
 from hostmac import get_netmac_cached
@@ -51,6 +50,14 @@ from trafficgens import start_iperf, start_ping, \
     create_http_incast_content, start_httperf_incast, \
     start_nttcp, start_httperf_incast_n, \
     start_fps_game, start_dash_streaming_dashjs, start_nginx_server
+    
+# UPDATED:
+from fabric2 import Connection, SerialGroup, task as fabric_v2_task, Config
+from fabric2.group import SerialGroup, ThreadingGroup, Group
+
+from hosttype import get_type_cached_v2
+from hostint import get_netint_cached_v2, get_netint_windump_cached_v2
+from hostmac import get_netmac_cached_v2
 
 
 def _args(*_nargs, **_kwargs):
@@ -91,7 +98,7 @@ def check_router_queues(queue_spec, vnames_referenced):
 
 
 ## Check config file settings (TASK)
-@task
+@fabric_task
 def check_config():
     "Check config file"
 
@@ -356,57 +363,8 @@ def check_config():
 
     puts('Config file looks OK')
     
-
-@task
-def checkHost():
-    "Check that needed tools are installed on hosts"
-    
-    # get type of current host
-    htype = get_type_cached(env.host_string)
-    
-    for host in config.TPCONF_router + config.TPCONF_hosts:
-        with Connection(host) as c:
-            # run checks
-            if env.host_string in config.TPCONF_router:
-                if htype == 'FreeBSD':
-                    c.run('which ipfw')
-                if htype == "Linux":
-                    c.run('which tc')
-                    c.run('which iptables')
-                # XXX check that kernel tick rate is high (>= 1000)
-            else:
-                if htype == 'FreeBSD':
-                    c.run('which md5')
-                    c.run('which tcpdump')
-                elif htype == 'Darwin':
-                    c.run('which md5')
-                    c.run('which tcpdump')
-                    c.run('which dsiftr-osx-teacup.d')
-                elif htype == 'Linux':
-                    c.run('which ethtool')
-                    c.run('which md5sum')
-                    c.run('which tcpdump')
-                elif htype == 'CYGWIN':
-                    c.run('which WinDump')
-                    c.run('which win-estats-logger')
-                    
-                    
-            c.run('which killall', pty=False)
-            c.run('which pkill', pty=False)
-            c.run('which ps', pty=False)
-            c.run('which gzip', pty=False)
-            c.run('which dd', pty=False)
-
-            # check for traffic sender/receiver tools
-            c.run('which iperf', pty=False)
-            c.run('which ping', pty=False)
-            c.run('which httperf', pty=False)
-            c.run('which lighttpd', pty=False)
-            c.run('which nttcp', pty=False)
-        
-
 ## Check hosts for necessary tools (TASK)
-@task
+@fabric_task
 @parallel
 def check_host():
     "Check that needed tools are installed on hosts"
@@ -434,18 +392,18 @@ def check_host():
             run('which ethtool')
             run('which md5sum')
             run('which tcpdump')
-            #run('which web10g-listconns')
-            #run('which web10g-readvars')
-            #updated for ttprobe support
-            # try:
-            #     linux_tcp_logger = config.TPCONF_linux_tcp_logger
-            # except AttributeError:
-            #     linux_tcp_logger = 'web10g'
-            # if linux_tcp_logger == 'ttprobe' or linux_tcp_logger == 'both':
-            #     #checking the availability of ttprobe.ko kernel module
-            #     run('ls /lib/modules/$(uname -r)/extra/ttprobe.ko')
-            # if linux_tcp_logger == 'web10g' or linux_tcp_logger == 'both':
-            #     run('which web10g-logger')
+            run('which web10g-listconns')
+            run('which web10g-readvars')
+            # updated for ttprobe support
+            try:
+                linux_tcp_logger = config.TPCONF_linux_tcp_logger
+            except AttributeError:
+                linux_tcp_logger = 'web10g'
+            if linux_tcp_logger == 'ttprobe' or linux_tcp_logger == 'both':
+                #checking the availability of ttprobe.ko kernel module
+                run('ls /lib/modules/$(uname -r)/extra/ttprobe.ko')
+            if linux_tcp_logger == 'web10g' or linux_tcp_logger == 'both':
+                run('which web10g-logger')
         elif htype == 'CYGWIN':
             run('which WinDump', pty=False)
             run('which win-estats-logger', pty=False)
@@ -479,17 +437,110 @@ def check_host():
         run('which lighttpd', pty=False)
         run('which nttcp', pty=False)
 
-    # put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin')
-    # run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
-    # run('which runbg_wrapper.sh', pty=False)
+    put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin')
+    run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
+    run('which runbg_wrapper.sh', pty=False)
 
-    # put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin')
-    # run('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
-    # run('which kill_iperf.sh', pty=False)
+    put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin')
+    run('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
+    run('which kill_iperf.sh', pty=False)
 
-    # put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin')
-    # run('chmod a+x /usr/bin/pktgen.sh', pty=False)
-    # run('which pktgen.sh', pty=False)
+    put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin')
+    run('chmod a+x /usr/bin/pktgen.sh', pty=False)
+    run('which pktgen.sh', pty=False)
+
+
+@fabric_v2_task
+@parallel
+def check_host_v2(c: Connection) -> None:
+    """
+    Check that needed tools are installed on hosts (v2)
+
+    Args:
+        c (Connection): Fabric Connection object
+        
+    Returns:
+        None
+    """
+    
+    print(f"[{c.host}]: Executing check_host_v2")
+    
+    # get type of current host
+    htype = get_type_cached_v2(c)
+    
+    
+    if c.host in config.TPCONF_router:
+        if htype == 'FreeBSD':
+            c.run('which ipfw')
+        if htype == "Linux":
+            c.run('which tc')
+            c.run('which iptables')
+        # XXX check that kernel tick rate is high (>= 1000)
+    else:
+        if htype == 'FreeBSD':
+            c.run('which md5')
+            c.run('which tcpdump')
+        elif htype == 'Darwin':
+            c.run('which md5')
+            c.run('which tcpdump')
+            c.run('which dsiftr-osx-teacup.d')
+        elif htype == 'Linux':
+            c.run('which ethtool')
+            c.run('which md5sum')
+            c.run('which tcpdump')
+            #run('which web10g-listconns')
+            #run('which web10g-readvars')
+            #updated for ttprobe support
+            # try:
+            #     linux_tcp_logger = config.TPCONF_linux_tcp_logger
+            # except AttributeError:
+            #     linux_tcp_logger = 'web10g'
+            # if linux_tcp_logger == 'ttprobe' or linux_tcp_logger == 'both':
+            #     #checking the availability of ttprobe.ko kernel module
+            #     run('ls /lib/modules/$(uname -r)/extra/ttprobe.ko')
+            # if linux_tcp_logger == 'web10g' or linux_tcp_logger == 'both':
+            #     run('which web10g-logger')
+        elif htype == 'CYGWIN':
+            c.run('which WinDump', pty=False)
+            c.run('which win-estats-logger', pty=False)
+            
+            # if we don't have proper ntp installed then
+            # start time service if not started and force resync
+            ret = c.run('ls "/cygdrive/c/Program Files (x86)/NTP/bin/ntpq"', warn=True)
+            if ret.return_code != 0: 
+                c.run('net start w32time', warn=True, pty=False)
+                c.run('w32tm /resync', warn=True, pty=False)
+                
+            interfaces = get_netint_cached(c.host, int_no=-1)
+            for interface in interfaces:
+                c.run('netsh int set int "Local Area Connection %s" enabled' %
+                    interface, pty=False, warn=True)
+                
+        c.run('which killall', pty=False)
+        c.run('which pkill', pty=False)
+        c.run('which ps', pty=False)
+        c.run('which gzip', pty=False)
+        c.run('which dd', pty=False)
+
+        # check for traffic sender/receiver tools
+        c.run('which iperf', pty=False)
+        c.run('which ping', pty=False)
+        c.run('which httperf', pty=False)
+        c.run('which lighttpd', pty=False)
+        c.run('which nttcp', pty=False)
+                
+    # c.put(config.TPCONF_script_path + '/runbg_wrapper.sh', '/usr/bin')
+    # c.run('chmod a+x /usr/bin/runbg_wrapper.sh', pty=False)
+    # c.run('which runbg_wrapper.sh', pty=False)
+
+    # c.put(config.TPCONF_script_path + '/kill_iperf.sh', '/usr/bin')
+    # c.run('chmod a+x /usr/bin/kill_iperf.sh', pty=False)
+    # c.run('which kill_iperf.sh', pty=False)
+
+    # c.put(config.TPCONF_script_path + '/pktgen.sh', '/usr/bin')
+    # c.run('chmod a+x /usr/bin/pktgen.sh', pty=False)
+    # c.run('which pktgen.sh', pty=False)
+            
 
 
 ## Return  true if IP a is in any of the /24 subnets in list l
@@ -508,8 +559,30 @@ def in_subnets(a, l):
     return False
 
 
+def in_subnets_v2(a: str, subnet_list: list) -> bool:
+    """
+    Return True if IP 'a' is in any of the /24 subnets in list 'subnet_list'.
+    
+    :param a: First IP (string)
+    :param subnet_list: List of /24 subnets (list of strings)
+    :return: True if 'a' is in any subnet in the list, False otherwise
+    """
+
+    # Split the first IP address into its components
+    a_arr = a.split('.')
+
+    # Iterate through the subnets and compare the first 3 octets
+    for b in subnet_list:
+        b_arr = b.split('.')
+        if a_arr[:3] == b_arr[:3]:  # Check if the first 3 octets are the same
+            return True
+
+    return False
+
+
+
 ## Check connectivity (and also prime switch's CAM table) (TASK)
-@task
+@fabric_task
 @parallel
 def check_connectivity():
     "Check connectivity between each pair of hosts with ping"
@@ -543,13 +616,52 @@ def check_connectivity():
                 if htype == "CYGWIN":
                     run('ping -n 2 %s' % ihost, pty=False)
                 else:
-                    run('ping -c 2 %s' % ihost, pty=False)
+                    run('ping -c 2 %s' % ihost, pty=False, warn_only=True)
+                    
+@fabric_v2_task
+@parallel
+def check_connectivity_v2(c: Connection):
+    "Check connectivity between each pair of hosts with ping"
+    
+    print(f"[{c.host}]: Executing check_connectivity_v2")
+    
+    # get type of current host
+    htype = get_type_cached_v2(c)
+    
+    # get host test IP
+    test_ip = config.TPCONF_host_internal_ip[c.host][0]
+    
+    # get list of reachable /24 subnets
+    # reachable does not store /24 subnets, but the actual IPs, since we always
+    # ignore the last octet in comparisons anyway
+     # Get list of reachable /24 subnets
+    reachable = [test_ip]
+    for r in config.TPCONF_router:
+        for r_ip in config.TPCONF_host_internal_ip[r]:
+            if in_subnets_v2(r_ip, reachable):
+                # Add other subnets the router is connected to
+                for x_ip in config.TPCONF_host_internal_ip[r]:
+                    if x_ip != r_ip and x_ip not in reachable:
+                        reachable.append(x_ip)
+                break  # Continue with the next router
+
+    all_hosts = config.TPCONF_router + config.TPCONF_hosts
+    for host in all_hosts:
+        for ihost in config.TPCONF_host_internal_ip[host]:
+            if in_subnets_v2(ihost, reachable):
+                if htype == "CYGWIN":
+                    # CYGWIN uses -n for ping count
+                    c.run(f'ping -n 2 {ihost}', pty=False)
+                else:
+                    # Linux and others use -c for ping count
+                    c.run(f'ping -c 2 {ihost}', pty=False, warn=True)
+    
 
 
 ## Check time synchronisation with control machine (should not run in parallel)
 ## This is only a simple check to detect if clocks are completely out of sync
 ## Assumes: the control machine is synchronised (i.e. uses NTP)
-@task
+@fabric_task
 def check_time_sync():
     "Check time synchronisation between control host and testbed host clocks"
 
@@ -588,10 +700,51 @@ def check_time_sync():
         abort(
             'Host %s time synchronisation error (difference > %s seconds)' %
             (env.host_string, str(allowed_time_diff)))
+        
+@fabric_v2_task
+def check_time_sync_v2(c: Connection):
+    """
+    Check time synchronization between control host and testbed host clocks.
+    """
+    
+    print(f"[{c.host}]: Checking time synchronization...")
+
+    # Set allowed time difference (default to 1 second)
+    allowed_time_diff = getattr(config, 'TPCONF_max_time_diff', 1)
+
+    # Get the type of the current host
+    htype = get_type_cached_v2(c)
+
+    # Get local time before running the remote command
+    t1 = datetime.datetime.now()
+
+    # Fetch remote timestamp in Unix time
+    if htype in ['FreeBSD', 'Linux', 'Darwin']:
+        rdate = c.run("date +'%s'", hide=True).stdout.strip()
+    elif htype == 'CYGWIN':
+        rdate = c.run("date +'%s'", hide=True, pty=False).stdout.strip()
+
+    # Get local time after running the remote command
+    t2 = datetime.datetime.now()
+
+    # Calculate the local timestamp in Unix time
+    ldate = c.local("date +'%s'", hide=True).stdout.strip()
+
+    # Calculate the processing delay between t1 and t2
+    dt_diff = t2 - t1
+    sec_diff = dt_diff.total_seconds()
+
+    # Display times and processing delay
+    print(f"Local time: {ldate}, Remote time: {rdate}, Proc delay: {sec_diff:.6f} seconds")
+
+    # Calculate time difference and check if it's within the allowed range
+    diff = abs(int(ldate) - int(rdate) - sec_diff)
+    if diff > allowed_time_diff:
+        raise RuntimeError(f"Host {c.host} time synchronization error (difference > {allowed_time_diff} seconds)")
 
 
 ## Kill any old processes (TASK)
-@task
+@fabric_task
 @parallel
 def kill_old_processes():
     "Kill old logging or traffic generation processes still running"
@@ -635,6 +788,65 @@ def kill_old_processes():
 
     # remove old log stuff in /tmp
     run('rm -f /tmp/*.log', pty=False)
+    
+@fabric_v2_task
+@parallel
+def kill_old_processes_v2(c: Connection) -> None:
+    """
+    Kill any old processes (TASK)
+
+    Args:
+        c (Connection): Fabric Connection object
+    
+    Returns:
+        None
+    """
+
+    # Get type of the current host
+    htype = get_type_cached_v2(c)
+    
+    # Perform actions based on the OS type
+    if htype == 'FreeBSD':
+        c.run('killall tcpdump', warn=True, pty=False)
+    elif htype == 'Linux':
+        c.run('killall tcpdump', warn=True, pty=False)
+        
+        c.run('rmmod ttprobe', warn=True)  # Remove module
+        
+        c.run('killall web10g-logger', warn=True, pty=False)
+    elif htype == 'Darwin':
+        c.run('killall tcpdump', warn=True, pty=False)
+        
+        c.run('killall dsiftr-osx-teacup.d', warn=True, pty=False)
+    elif htype == 'CYGWIN':
+        c.run('killall WinDump', warn=True, pty=False)
+        
+        c.run('killall win-estats-logger', warn=True, pty=False)
+        
+        c.run('killall -9 iperf', warn=True, pty=False)
+    else:
+        c.run('killall iperf', warn=True, pty=False)
+
+    c.run('killall ping', warn=True, pty=False)
+        
+    c.run('killall httperf', warn=True, pty=False)
+        
+    c.run('killall lighttpd', warn=True, pty=False)
+
+    # Delete old lighttpd pid files
+    c.run('rm -f /var/run/*lighttpd.pid', warn=True, pty=False)
+        
+    c.run('killall runbg_wrapper.sh', warn=True, pty=False)
+        
+    c.run('killall nttcp', warn=True, pty=False)
+        
+    c.run('killall pktgen.sh', warn=True, pty=False)
+        
+    c.run('killall python', warn=True, pty=False)
+
+    # Remove old log files in /tmp
+    c.run('rm -f /tmp/*.log', warn=True, pty=False)
+
 
 
 ## Collect host info, prefill caches (must not be run in parallel!!!)
@@ -658,11 +870,40 @@ def get_host_info(htype='1', netint='1', netmac='1'):
                                   internal_int='0')
     if netmac == '1':
         get_netmac_cached(env.host_string)
+        
+@fabric_v2_task
+def get_host_info_v2(c: Connection, htype='1', netint='1', netmac='1') -> None:
+    """
+    Collect host info, prefill caches (must not be run in parallel!!!). Any parallel task cannot fill the caches cause the parallel execution is done with fork().
+    Populate the host info caches.
+
+    Args:
+        c (Connection): Fabric connection object.
+        htype (str): '0' don't get host OS, '1' get host OS.
+        netint (str): '0' don't get network interface names, '1' get network interface names.
+        netmac (str): '0' don't get MAC addresses, '1' get MAC addresses.
+        
+    Returns:
+        None
+    """
+    print(f"[{c.host}]: Executing get_host_info_v2")
+    
+    if htype == '1':
+        get_type_cached_v2(c)
+    if netint == '1':
+        get_netint_cached_v2(c, int_no=-1)
+        get_netint_windump_cached_v2(c, int_no=-1)
+        get_netint_cached_v2(c, int_no=-1, internal_int='0')
+        get_netint_windump_cached_v2(c, int_no=-1, internal_int='0')
+        
+    if netmac == '1':
+        get_netmac_cached_v2(c)
+
 
 
 ## Run all sanity checks
-@task
-def sanity_checks():
+@fabric_task
+def sanity_checks(): 
     "Perform all sanity checks, e.g. check for needed tools and connectivity"
 
     execute(check_host, hosts=config.TPCONF_router + config.TPCONF_hosts)
@@ -685,4 +926,34 @@ def sanity_checks():
         config.TPCONF_hosts)
 
     execute(check_time_sync, hosts=config.TPCONF_router + config.TPCONF_hosts)
+    
+    
+@fabric_v2_task
+def sanity_checks_v2(c):
+    """
+    Perform all sanity checks, e.g., check for needed tools and connectivity
+    
+    Args:
+        c (Connection): Fabric connection object.
+        
+    Returns:
+        None
+    """
+    
+    print(f"[{c.host}]: Executing sanity_checks_v2")
+    
 
+    do_check_conn = getattr(config, "TPCONF_check_connectivity", '1') == '1'
+    
+    for host in config.all_hosts:
+        # Create a new connection with the custom config and run the sanity checks
+        conn : Connection = config.host_to_conn[host];
+        check_host_v2(conn)
+
+        if do_check_conn:
+            check_connectivity_v2(conn)
+        
+        kill_old_processes_v2(conn)
+        check_time_sync_v2(conn)
+    
+    print(f"[MAIN]: Sanity checks completed")

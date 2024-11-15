@@ -34,6 +34,7 @@
 #         Mitchell Lowe (101607237@student.swin.edu.au)
 
 
+from fabric2 import Connection, task as fabric_v2_task
 from fabric.api import task, warn, local, run, execute, abort, hosts, hide
 
 ## Map external ips/names to OS (automatically determined)
@@ -75,6 +76,34 @@ def get_type_cached(host='', for_local='0'):
                     hosts=host).items()))  # Convert to list for concatenation
         return host_os.get(host, '')
 
+def get_type_cached_v2(c: Connection, for_local='0') -> str:
+    """Get host type and populate host_os, ctrl_host_os
+
+    Args:
+        c (Connection): Fabric Connection object
+        for_local (str, optional):  If '0' get type of remote host, if '1' get type of local host (where we execute script). Defaults to '0'.
+
+    Returns:
+        str: Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
+    """
+    
+    print(f"[{c.host}]: Executing get_type_cached_v2")
+    
+    global host_os
+    global ctrl_host_os
+    
+    host = c.host
+
+    if for_local == '1':
+        if ctrl_host_os == '':
+            ctrl_host_os = c.local('uname -s', hide=True).stdout.strip()  # Correct way to capture local output
+        return ctrl_host_os
+    else:
+        if host not in host_os:
+            # Get the OS type from the remote host and store it in the dictionary
+            os_type = get_type_v2(c)
+            host_os[host] = os_type  # Store it in the host_os dictionary
+        return host_os.get(host, '')
 
 ## Get host operating system type (TASK)
 #  @return Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
@@ -86,6 +115,32 @@ def get_type():
         htype = run('uname -s', pty=False)
 
     # ignore Windows version bit of output
+    if htype[0:6] == "CYGWIN":
+        htype = "CYGWIN"
+
+    return htype
+
+@fabric_v2_task
+def get_type_v2(c: Connection) -> str:
+    """
+    Get host operating system type (TASK)
+
+    Args:
+        c (Connection: Fabric Connection object
+
+    Returns:
+        str: Operating system string, e.g. "FreeBSD" or "Linux" or "CYGWIN"
+    """
+    
+    print(f"[{c.host}]: Executing get_type_v2")
+    
+    # Run the command and get the Result object
+    result = c.run('uname -s', pty=False)
+    
+    # Extract the output from the result
+    htype = result.stdout.strip()  # Remove any extra whitespace or newlines
+
+    # Ignore Windows version bit of output
     if htype[0:6] == "CYGWIN":
         htype = "CYGWIN"
 
