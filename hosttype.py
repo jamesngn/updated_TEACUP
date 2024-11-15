@@ -30,9 +30,9 @@
 # $Id: hosttype.py,v e7ea179b29d8 2015/05/25 04:28:23 sebastian $
 # 
 # Copyright (c) 2024 
-# Author: Mitchell Lowe (101607237@student.swin.edu.au)
-#         
-# 
+# Author: Quang Nguyen  (103493836@student.swin.edu.au)
+#         Mitchell Lowe (101607237@student.swin.edu.au)
+
 
 from fabric.api import task, warn, local, run, execute, abort, hosts, hide
 

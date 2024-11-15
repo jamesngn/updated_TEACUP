@@ -31,8 +31,7 @@
 # 
 # Copyright (c) 2024 
 # Author: Mitchell Lowe (101607237@student.swin.edu.au)
-#         
-# 
+#         Sanyam Verma  (103165193@student.swin.edu.au)
 
 import os
 import sys

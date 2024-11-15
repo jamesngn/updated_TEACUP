@@ -30,9 +30,8 @@
 # $Id: fabfile.py,v 066d6f004887 2018/02/07 19:40:37 garmitage $
 # 
 # Copyright (c) 2024 
-# Author: Mitchell Lowe (101607237@student.swin.edu.au)
-#         
-# 
+# Author: Quang Nguyen  (103493836@student.swin.edu.au) 
+#         Mitchell Lowe (101607237@student.swin.edu.au)
 
 
 import os

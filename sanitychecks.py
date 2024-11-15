@@ -30,9 +30,8 @@
 # $Id: sanitychecks.py,v acbc2c605527 2017/12/09 19:56:17 garmitage $
 # 
 # Copyright (c) 2024 
-# Author: Mitchell Lowe (101607237@student.swin.edu.au)
-#         
-# 
+# Author: Quang Nguyen  (103493836@student.swin.edu.au)
+#
 
 import sys
 import os

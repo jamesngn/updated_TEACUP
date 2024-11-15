@@ -30,9 +30,7 @@
 # $Id: experiment.py,v 75624d28a630 2018/02/02 04:19:30 garmitage $
 # 
 # Copyright (c) 2024 
-# Author: Mitchell Lowe (101607237@student.swin.edu.au)
-#         
-# 
+# Author:  Quang Nguyen  (103493836@student.swin.edu.au)
 
 import time
 import datetime

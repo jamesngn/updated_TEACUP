@@ -30,9 +30,8 @@
 # $Id: runbg.py,v 94ce5179795c 2015/09/28 06:44:10 s $
 # 
 # Copyright (c) 2024 
-# Author: Mitchell Lowe (101607237@student.swin.edu.au)
-#         
-# 
+# Author: Sanyam Verma  (103165193@student.swin.edu.au)
+
 
 import time
 import bgproc

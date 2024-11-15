@@ -30,9 +30,7 @@
 # $Id: trafficgens.py,v 066d6f004887 2018/02/07 19:40:37 garmitage $
 # 
 # Copyright (c) 2024 
-# Author: Mitchell Lowe (101607237@student.swin.edu.au)
-#         
-# 
+# Author: Sanyam Verma  (103165193@student.swin.edu.au)
 
 import time
 import random
